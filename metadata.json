@@ -1,0 +1,5 @@
+{
+  "name": "Math Quiz Generator",
+  "description": "An interactive web application that generates a random math quiz based on user-selected number ranges and operation types. It tracks time and provides instant feedback on answers.",
+  "requestFramePermissions": []
+}
