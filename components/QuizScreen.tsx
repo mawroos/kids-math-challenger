@@ -82,7 +82,8 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz }) => {
                         <span className="text-lg font-medium text-slate-400 w-2/5">{q.text}</span>
                         <input
                             type="number"
-                            ref={el => inputRefs.current[index] = el}
+                            // FIX: The ref callback should not return a value. Using a block body `{}` ensures the arrow function returns void.
+                            ref={el => { inputRefs.current[index] = el; }}
                             value={userAnswerStr || ''}
                             onChange={(e) => handleAnswerChange(q.id, e.target.value)}
                             className="flex-grow bg-slate-800 border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
