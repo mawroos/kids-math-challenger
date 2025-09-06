@@ -2,10 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Question, QuizResults } from '../types';
 import CheckIcon from './icons/CheckIcon';
 import XIcon from './icons/XIcon';
+import { soundEffects } from '../utils/soundEffects';
 
 interface QuizScreenProps {
   questions: Question[];
   onFinishQuiz: (results: QuizResults) => void;
+  soundEnabled: boolean;
 }
 
 const Timer: React.FC<{ time: number }> = ({ time }) => {
@@ -22,7 +24,7 @@ const Timer: React.FC<{ time: number }> = ({ time }) => {
   );
 };
 
-const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz }) => {
+const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, soundEnabled }) => {
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [time, setTime] = useState(0);
   // Fix: Replaced NodeJS.Timeout with ReturnType<typeof setInterval> for browser compatibility.
@@ -42,7 +44,30 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz }) => {
   }, []);
 
   const handleAnswerChange = (id: number, value: string) => {
+    // Get the previous answer state
+    const previousAnswer = userAnswers[id];
+    const question = questions.find(q => q.id === id);
+    
     setUserAnswers((prev) => ({ ...prev, [id]: value }));
+    
+    // Play sound effects based on answer correctness
+    if (question && value !== '' && !isNaN(parseInt(value, 10))) {
+      const numericValue = parseInt(value, 10);
+      const isCorrect = numericValue === question.correctAnswer;
+      const wasCorrect = previousAnswer !== undefined && 
+                        previousAnswer !== '' && 
+                        !isNaN(parseInt(previousAnswer, 10)) && 
+                        parseInt(previousAnswer, 10) === question.correctAnswer;
+      
+      // Only play sound if the correctness state changed and sound is enabled
+      if (soundEnabled) {
+        if (isCorrect && !wasCorrect) {
+          soundEffects.playCorrectSound();
+        } else if (!isCorrect && (wasCorrect || previousAnswer === undefined || previousAnswer === '')) {
+          soundEffects.playIncorrectSound();
+        }
+      }
+    }
   };
 
   const finishQuiz = useCallback(() => {
@@ -53,6 +78,12 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz }) => {
       const userAnswer = parseInt(userAnswers[q.id], 10);
       return userAnswer === q.correctAnswer ? acc + 1 : acc;
     }, 0);
+    
+    // Play celebration sound when quiz is completed (if sound is enabled)
+    if (soundEnabled) {
+      soundEffects.playCelebrationSound();
+    }
+    
     onFinishQuiz({ score, total: questions.length, time });
   }, [questions, userAnswers, time, onFinishQuiz]);
 

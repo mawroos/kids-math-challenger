@@ -35,6 +35,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
   const [upperBound2, setUpperBound2] = useState<number>(10);
   const [numQuestions, setNumQuestions] = useState<number>(10);
   const [selectedOps, setSelectedOps] = useState<Operation[]>([Operation.Addition, Operation.Subtraction]);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
   const handleOperationToggle = (op: Operation) => {
@@ -61,6 +62,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
       upperBound2,
       numQuestions,
       operations: selectedOps,
+      soundEnabled,
     });
   };
 
@@ -134,6 +136,30 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
             <OperationButton op={Operation.Multiplication} label="Multiply" icon="×" selected={selectedOps.includes(Operation.Multiplication)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Division} label="Divide" icon="÷" selected={selectedOps.includes(Operation.Division)} onClick={handleOperationToggle} />
           </div>
+        </div>
+
+        <div className="flex items-center justify-center space-x-3 py-2">
+          <label htmlFor="soundToggle" className="text-sm font-medium text-slate-400">
+            Sound Effects
+          </label>
+          <button
+            type="button"
+            id="soundToggle"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+              soundEnabled ? 'bg-sky-500' : 'bg-slate-600'
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                soundEnabled ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          <span className="text-sm text-slate-500">
+            {soundEnabled ? 'On' : 'Off'}
+          </span>
         </div>
 
         {error && <p className="text-red-400 text-center">{error}</p>}

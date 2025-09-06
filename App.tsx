@@ -10,8 +10,10 @@ const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.SETUP);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quizResults, setQuizResults] = useState<QuizResults | null>(null);
+  const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
 
   const handleStartQuiz = useCallback((settings: QuizSettings) => {
+    setQuizSettings(settings);
     setQuestions(generateQuestions(settings));
     setAppState(AppState.QUIZ);
   }, []);
@@ -24,15 +26,16 @@ const App: React.FC = () => {
   const handleRestart = useCallback(() => {
     setQuestions([]);
     setQuizResults(null);
+    setQuizSettings(null);
     setAppState(AppState.SETUP);
   }, []);
 
   const renderContent = () => {
     switch (appState) {
       case AppState.QUIZ:
-        return <QuizScreen questions={questions} onFinishQuiz={handleFinishQuiz} />;
+        return <QuizScreen questions={questions} onFinishQuiz={handleFinishQuiz} soundEnabled={quizSettings?.soundEnabled ?? true} />;
       case AppState.RESULTS:
-        return <ResultsScreen results={quizResults!} onRestart={handleRestart} />;
+        return <ResultsScreen results={quizResults!} onRestart={handleRestart} soundEnabled={quizSettings?.soundEnabled ?? true} />;
       case AppState.SETUP:
       default:
         return <SetupScreen onStartQuiz={handleStartQuiz} />;

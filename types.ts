@@ -12,6 +12,7 @@ export interface QuizSettings {
   upperBound2: number;
   operations: Operation[];
   numQuestions: number;
+  soundEnabled?: boolean;
 }
 
 export interface Question {

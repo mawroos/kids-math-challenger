@@ -1,15 +1,39 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { QuizResults } from '../types';
+import { soundEffects } from '../utils/soundEffects';
 
 interface ResultsScreenProps {
   results: QuizResults;
   onRestart: () => void;
+  soundEnabled: boolean;
 }
 
-const ResultsScreen: React.FC<ResultsScreenProps> = ({ results, onRestart }) => {
+const ResultsScreen: React.FC<ResultsScreenProps> = ({ results, onRestart, soundEnabled }) => {
     const { score, total, time } = results;
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+
+    // Play results sound when component mounts (if sound is enabled)
+    useEffect(() => {
+        if (!soundEnabled) return;
+        
+        const playResultsSound = async () => {
+            if (percentage >= 80) {
+                // Great performance - play celebration sound
+                await soundEffects.playCelebrationSound();
+            } else if (percentage >= 50) {
+                // Decent performance - play correct sound
+                await soundEffects.playCorrectSound();
+            } else {
+                // Needs improvement - play incorrect sound
+                await soundEffects.playIncorrectSound();
+            }
+        };
+        
+        // Delay the sound slightly to let the component render
+        const timer = setTimeout(playResultsSound, 300);
+        return () => clearTimeout(timer);
+    }, [percentage, soundEnabled]);
 
     const formatTime = (seconds: number) => {
         const minutes = Math.floor(seconds / 60);
