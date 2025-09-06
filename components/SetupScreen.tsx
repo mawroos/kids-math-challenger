@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { QuizSettings, Operation } from '../types';
 
@@ -30,8 +29,10 @@ const OperationButton: React.FC<{
 };
 
 const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
-  const [lowerBound, setLowerBound] = useState<number>(1);
-  const [upperBound, setUpperBound] = useState<number>(10);
+  const [lowerBound1, setLowerBound1] = useState<number>(1);
+  const [upperBound1, setUpperBound1] = useState<number>(10);
+  const [lowerBound2, setLowerBound2] = useState<number>(1);
+  const [upperBound2, setUpperBound2] = useState<number>(10);
   const [numQuestions, setNumQuestions] = useState<number>(10);
   const [selectedOps, setSelectedOps] = useState<Operation[]>([Operation.Addition, Operation.Subtraction]);
   const [error, setError] = useState<string>('');
@@ -48,14 +49,16 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
       setError('Please select at least one operation.');
       return;
     }
-    if (lowerBound >= upperBound) {
-        setError('Lower bound must be less than upper bound.');
+    if (lowerBound1 >= upperBound1 || lowerBound2 >= upperBound2) {
+        setError('Lower bound must be less than its corresponding upper bound.');
         return;
     }
     setError('');
     onStartQuiz({
-      lowerBound,
-      upperBound,
+      lowerBound1,
+      upperBound1,
+      lowerBound2,
+      upperBound2,
       numQuestions,
       operations: selectedOps,
     });
@@ -65,27 +68,49 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-center mb-6 text-slate-200">Create Your Quiz</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6">
           <div>
-            <label htmlFor="lowerBound" className="block text-sm font-medium text-slate-400 mb-2">Number Range (Lower)</label>
+            <label htmlFor="lowerBound1" className="block text-sm font-medium text-slate-400 mb-2">First Number (Lower)</label>
             <input
-              id="lowerBound"
+              id="lowerBound1"
               type="number"
-              value={lowerBound}
-              onChange={(e) => setLowerBound(parseInt(e.target.value, 10) || 0)}
+              value={lowerBound1}
+              onChange={(e) => setLowerBound1(parseInt(e.target.value, 10) || 0)}
               className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
               min="0"
             />
           </div>
           <div>
-            <label htmlFor="upperBound" className="block text-sm font-medium text-slate-400 mb-2">Number Range (Upper)</label>
+            <label htmlFor="upperBound1" className="block text-sm font-medium text-slate-400 mb-2">First Number (Upper)</label>
             <input
-              id="upperBound"
+              id="upperBound1"
               type="number"
-              value={upperBound}
-              onChange={(e) => setUpperBound(parseInt(e.target.value, 10) || 0)}
+              value={upperBound1}
+              onChange={(e) => setUpperBound1(parseInt(e.target.value, 10) || 0)}
               className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
-              min={lowerBound + 1}
+              min={lowerBound1 + 1}
+            />
+          </div>
+           <div>
+            <label htmlFor="lowerBound2" className="block text-sm font-medium text-slate-400 mb-2">Second Number (Lower)</label>
+            <input
+              id="lowerBound2"
+              type="number"
+              value={lowerBound2}
+              onChange={(e) => setLowerBound2(parseInt(e.target.value, 10) || 0)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+              min="0"
+            />
+          </div>
+          <div>
+            <label htmlFor="upperBound2" className="block text-sm font-medium text-slate-400 mb-2">Second Number (Upper)</label>
+            <input
+              id="upperBound2"
+              type="number"
+              value={upperBound2}
+              onChange={(e) => setUpperBound2(parseInt(e.target.value, 10) || 0)}
+              className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+              min={lowerBound2 + 1}
             />
           </div>
         </div>

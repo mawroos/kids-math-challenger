@@ -1,4 +1,3 @@
-
 export enum Operation {
   Addition = 'addition',
   Subtraction = 'subtraction',
@@ -7,8 +6,10 @@ export enum Operation {
 }
 
 export interface QuizSettings {
-  lowerBound: number;
-  upperBound: number;
+  lowerBound1: number;
+  upperBound1: number;
+  lowerBound2: number;
+  upperBound2: number;
   operations: Operation[];
   numQuestions: number;
 }

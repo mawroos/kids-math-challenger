@@ -25,7 +25,7 @@ function getFactors(num: number): number[] {
 }
 
 export function generateQuestions(settings: QuizSettings): Question[] {
-  const { lowerBound, upperBound, operations, numQuestions } = settings;
+  const { lowerBound1, upperBound1, lowerBound2, upperBound2, operations, numQuestions } = settings;
   const questions: Question[] = [];
 
   for (let i = 0; i < numQuestions; i++) {
@@ -33,8 +33,8 @@ export function generateQuestions(settings: QuizSettings): Question[] {
     let text = '';
     let correctAnswer = 0;
 
-    let num1 = getRandomInt(lowerBound, upperBound);
-    let num2 = getRandomInt(lowerBound, upperBound);
+    let num1 = getRandomInt(lowerBound1, upperBound1);
+    let num2 = getRandomInt(lowerBound2, upperBound2);
 
     switch (operation) {
       case Operation.Addition:
@@ -42,9 +42,6 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         correctAnswer = num1 + num2;
         break;
       case Operation.Subtraction:
-        if (num1 < num2) {
-          [num1, num2] = [num2, num1]; // Ensure result is non-negative
-        }
         text = `${num1} - ${num2} = ?`;
         correctAnswer = num1 - num2;
         break;
@@ -60,7 +57,7 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         const maxAttempts = 100; // Prevent infinite loops for tricky ranges
 
         while (attempts < maxAttempts) {
-            dividend = getRandomInt(lowerBound, upperBound);
+            dividend = getRandomInt(lowerBound1, upperBound1);
             
             // Skip 0 as a dividend for typical quiz questions.
             if (dividend === 0) {
@@ -70,8 +67,7 @@ export function generateQuestions(settings: QuizSettings): Question[] {
 
             const allFactors = getFactors(dividend);
             
-            const minDivisor = lowerBound === 0 ? 1 : lowerBound;
-            const validDivisors = allFactors.filter(f => f >= minDivisor && f <= upperBound);
+            const validDivisors = allFactors.filter(f => f >= lowerBound2 && f <= upperBound2);
             
             // Prefer divisors that aren't 1 or the number itself, for a better challenge.
             const nonTrivialDivisors = validDivisors.filter(d => d !== 1 && d !== dividend);
@@ -92,11 +88,10 @@ export function generateQuestions(settings: QuizSettings): Question[] {
             attempts++;
         }
 
-        // Fallback if the loop couldn't find a suitable division problem (e.g., range of primes).
+        // Fallback if the loop couldn't find a suitable division problem.
         if (!text) {
-          const fallbackDivisor = getRandomInt(lowerBound === 0 ? 1 : lowerBound, upperBound);
-          dividend = fallbackDivisor;
-          divisor = fallbackDivisor;
+          divisor = getRandomInt(lowerBound2 === 0 ? 1 : lowerBound2, upperBound2);
+          dividend = divisor;
           text = `${dividend} ÷ ${divisor} = ?`;
           correctAnswer = 1;
         }
