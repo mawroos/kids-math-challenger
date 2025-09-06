@@ -42,6 +42,10 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         correctAnswer = num1 + num2;
         break;
       case Operation.Subtraction:
+        // To prevent negative results, ensure the first number is the largest.
+        if (num1 < num2) {
+          [num1, num2] = [num2, num1]; // Simple swap
+        }
         text = `${num1} - ${num2} = ?`;
         correctAnswer = num1 - num2;
         break;
