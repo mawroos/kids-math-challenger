@@ -146,12 +146,22 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
         </div>
         <div>
           <h3 className="text-sm font-medium text-slate-400 mb-3 text-center">Select Operations</h3>
-          <div className="flex gap-2 md:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
             <OperationButton op={Operation.Addition} label="Add" icon="+" selected={selectedOps.includes(Operation.Addition)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Subtraction} label="Subtract" icon="-" selected={selectedOps.includes(Operation.Subtraction)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Multiplication} label="Multiply" icon="×" selected={selectedOps.includes(Operation.Multiplication)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Division} label="Divide" icon="÷" selected={selectedOps.includes(Operation.Division)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.EquivalentFractions} label="Fractions" icon="½" selected={selectedOps.includes(Operation.EquivalentFractions)} onClick={handleOperationToggle} />
           </div>
+          {selectedOps.includes(Operation.EquivalentFractions) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-sky-400">Fraction questions:</span> Find equivalent fractions by determining missing numerators or denominators.
+                <br />
+                <span className="text-slate-400 text-xs">Example: ½ = ?/4 (answer: 2)</span>
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-center space-x-3 py-2">

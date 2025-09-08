@@ -7,6 +7,24 @@ function getRandomInt(min: number, max: number): number {
 }
 
 /**
+ * Finds the greatest common divisor of two numbers
+ */
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+/**
+ * Simplifies a fraction to its lowest terms
+ */
+function simplifyFraction(numerator: number, denominator: number): { numerator: number; denominator: number } {
+  const divisor = gcd(Math.abs(numerator), Math.abs(denominator));
+  return {
+    numerator: numerator / divisor,
+    denominator: denominator / divisor
+  };
+}
+
+/**
  * Finds all integer factors of a given number.
  * @param num The number to factorize.
  * @returns An array of unique factors.
@@ -98,6 +116,32 @@ export function generateQuestions(settings: QuizSettings): Question[] {
           dividend = divisor;
           text = `${dividend} ÷ ${divisor} = ?`;
           correctAnswer = 1;
+        }
+        break;
+      }
+      case Operation.EquivalentFractions: {
+        // Generate a simple fraction
+        const baseDenominator = getRandomInt(Math.max(2, lowerBound2), Math.min(12, upperBound2)); // Keep denominators reasonable
+        const baseNumerator = getRandomInt(1, baseDenominator - 1); // Ensure proper fraction
+        
+        // Simplify the base fraction
+        const simplified = simplifyFraction(baseNumerator, baseDenominator);
+        
+        // Generate a multiplier to create equivalent fraction
+        const multiplier = getRandomInt(2, Math.min(6, Math.max(2, upperBound1))); // Keep multipliers reasonable
+        
+        const equivalentNumerator = simplified.numerator * multiplier;
+        const equivalentDenominator = simplified.denominator * multiplier;
+        
+        // Randomly choose which fraction to show and which to ask for
+        if (getRandomInt(0, 1) === 0) {
+          // Show simplified, ask for equivalent
+          text = `\\frac{${simplified.numerator}}{${simplified.denominator}} = \\frac{?}{${equivalentDenominator}}`;
+          correctAnswer = equivalentNumerator;
+        } else {
+          // Show equivalent, ask for simplified
+          text = `\\frac{${equivalentNumerator}}{${equivalentDenominator}} = \\frac{${simplified.numerator}}{?}`;
+          correctAnswer = simplified.denominator;
         }
         break;
       }

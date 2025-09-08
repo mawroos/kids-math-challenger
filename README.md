@@ -2,7 +2,7 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+# Math Quiz Generator
 
 This contains everything you need to run your app locally.
 
@@ -11,10 +11,20 @@ View your app in AI Studio: https://ai.studio/apps/drive/1G_dfbNrofVGtKKO3fFvWPj
 ## Features
 
 - **Custom Quiz Generation**: Configure number ranges, operations, and question count (up to 500 questions)
+- **Multiple Math Operations**: Addition, Subtraction, Multiplication, Division, and **Equivalent Fractions**
+- **Fraction Support**: Interactive fraction questions with visual rendering (e.g., ½ = ?/4)
 - **Session Persistence**: Your quiz progress is automatically saved for 24 hours. If you refresh the page or close the browser, you can continue where you left off
 - **Sound Effects**: Optional audio feedback for correct/incorrect answers and celebration sounds
 - **Real-time Feedback**: Instant visual feedback with checkmarks for correct answers and X marks for incorrect ones
 - **Timer**: Track how long it takes to complete your quiz
+- **Cancel Quiz**: Option to cancel and restart at any time
+
+## Question Types
+
+1. **Basic Arithmetic**: Addition, subtraction, multiplication, and division with customizable number ranges
+2. **Equivalent Fractions**: Find missing numerators or denominators in equivalent fractions
+   - Example: `½ = ?/4` (Answer: 2)
+   - Example: `6/9 = 2/?` (Answer: 3)
 
 ## Session Storage
 

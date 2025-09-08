@@ -4,6 +4,7 @@ import CheckIcon from './icons/CheckIcon';
 import XIcon from './icons/XIcon';
 import { soundEffects } from '../utils/soundEffects';
 import { sessionStorageUtils } from '../utils/sessionStorage';
+import MathRenderer from './MathRenderer';
 
 interface QuizScreenProps {
   questions: Question[];
@@ -144,7 +145,13 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
 
                 return (
                     <div key={q.id} className={`bg-slate-800/80 p-5 rounded-lg border-2 ${borderColor} transition-colors duration-300 flex items-center space-x-4 shadow-lg`}>
-                        <span className="text-xl font-semibold text-slate-100 flex-1 leading-relaxed">{q.text}</span>
+                        <div className="text-xl font-semibold text-slate-100 flex-1 leading-relaxed">
+                            {q.text.includes('\\frac') ? (
+                                <MathRenderer expression={q.text} />
+                            ) : (
+                                <span>{q.text}</span>
+                            )}
+                        </div>
                         <input
                             type="number"
                             // FIX: The ref callback should not return a value. Using a block body `{}` ensures the arrow function returns void.

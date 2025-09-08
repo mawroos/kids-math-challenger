@@ -3,6 +3,7 @@ export enum Operation {
   Subtraction = 'subtraction',
   Multiplication = 'multiplication',
   Division = 'division',
+  EquivalentFractions = 'equivalent-fractions',
 }
 
 export interface QuizSettings {
@@ -19,6 +20,11 @@ export interface Question {
   id: number;
   text: string;
   correctAnswer: number;
+  answerType?: 'number' | 'fraction';
+  fractionAnswer?: {
+    numerator: number;
+    denominator: number;
+  };
 }
 
 export interface QuizResults {
