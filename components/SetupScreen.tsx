@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QuizSettings, Operation } from '../types';
+import { QuizSettings, Operation, OperationRanges } from '../types';
 import { sessionStorageUtils } from '../utils/sessionStorage';
 
 interface SetupScreenProps {
@@ -38,6 +38,18 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
   const [selectedOps, setSelectedOps] = useState<Operation[]>([Operation.Addition, Operation.Subtraction]);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [customMode, setCustomMode] = useState<boolean>(false);
+  
+  // Initialize operation ranges with default values
+  const [operationRanges, setOperationRanges] = useState<Partial<OperationRanges>>({
+    [Operation.Addition]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
+    [Operation.Subtraction]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
+    [Operation.Multiplication]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
+    [Operation.Division]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
+    [Operation.EquivalentFractions]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 12 },
+    [Operation.GroupingToTarget]: { lowerBound1: 100, upperBound1: 1000, lowerBound2: 1, upperBound2: 99 },
+    [Operation.GroupingByTensHundreds]: { lowerBound1: 10, upperBound1: 90, lowerBound2: 100, upperBound2: 900 },
+  });
 
   const handleClearSession = () => {
     sessionStorageUtils.clearSession();
@@ -50,16 +62,53 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
     );
   };
 
+  const updateOperationRange = (operation: Operation, field: string, value: number) => {
+    setOperationRanges(prev => ({
+      ...prev,
+      [operation]: {
+        ...prev[operation]!,
+        [field]: value
+      }
+    }));
+  };
+
+  const getOperationLabel = (op: Operation): string => {
+    switch (op) {
+      case Operation.Addition: return 'Addition';
+      case Operation.Subtraction: return 'Subtraction';
+      case Operation.Multiplication: return 'Multiplication';
+      case Operation.Division: return 'Division';
+      case Operation.EquivalentFractions: return 'Equivalent Fractions';
+      case Operation.GroupingToTarget: return 'Grouping to Target';
+      case Operation.GroupingByTensHundreds: return 'Grouping by 10s/100s';
+      default: return '';
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedOps.length === 0) {
       setError('Please select at least one operation.');
       return;
     }
-    if (lowerBound1 >= upperBound1 || lowerBound2 >= upperBound2) {
+    
+    if (customMode) {
+      // Validate custom ranges for each selected operation
+      for (const op of selectedOps) {
+        const ranges = operationRanges[op];
+        if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || ranges.lowerBound2 >= ranges.upperBound2) {
+          setError(`Invalid ranges for ${getOperationLabel(op)}. Lower bounds must be less than upper bounds.`);
+          return;
+        }
+      }
+    } else {
+      // Validate global ranges
+      if (lowerBound1 >= upperBound1 || lowerBound2 >= upperBound2) {
         setError('Lower bound must be less than its corresponding upper bound.');
         return;
+      }
     }
+    
     setError('');
     onStartQuiz({
       lowerBound1,
@@ -69,6 +118,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
       numQuestions,
       operations: selectedOps,
       soundEnabled,
+      customMode,
+      operationRanges: customMode ? operationRanges : undefined,
     });
   };
 
@@ -86,52 +137,55 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-2 gap-6">
-          <div>
-            <label htmlFor="lowerBound1" className="block text-sm font-medium text-slate-400 mb-2">First Number (Lower)</label>
-            <input
-              id="lowerBound1"
-              type="number"
-              value={lowerBound1}
-              onChange={(e) => setLowerBound1(parseInt(e.target.value, 10) || 0)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
-              min="0"
-            />
+        {/* Global Ranges - only show when custom mode is off */}
+        {!customMode && (
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label htmlFor="lowerBound1" className="block text-sm font-medium text-slate-400 mb-2">First Number (Lower)</label>
+              <input
+                id="lowerBound1"
+                type="number"
+                value={lowerBound1}
+                onChange={(e) => setLowerBound1(parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                min="0"
+              />
+            </div>
+            <div>
+              <label htmlFor="upperBound1" className="block text-sm font-medium text-slate-400 mb-2">First Number (Upper)</label>
+              <input
+                id="upperBound1"
+                type="number"
+                value={upperBound1}
+                onChange={(e) => setUpperBound1(parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                min={lowerBound1 + 1}
+              />
+            </div>
+             <div>
+              <label htmlFor="lowerBound2" className="block text-sm font-medium text-slate-400 mb-2">Second Number (Lower)</label>
+              <input
+                id="lowerBound2"
+                type="number"
+                value={lowerBound2}
+                onChange={(e) => setLowerBound2(parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                min="0"
+              />
+            </div>
+            <div>
+              <label htmlFor="upperBound2" className="block text-sm font-medium text-slate-400 mb-2">Second Number (Upper)</label>
+              <input
+                id="upperBound2"
+                type="number"
+                value={upperBound2}
+                onChange={(e) => setUpperBound2(parseInt(e.target.value, 10) || 0)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                min={lowerBound2 + 1}
+              />
+            </div>
           </div>
-          <div>
-            <label htmlFor="upperBound1" className="block text-sm font-medium text-slate-400 mb-2">First Number (Upper)</label>
-            <input
-              id="upperBound1"
-              type="number"
-              value={upperBound1}
-              onChange={(e) => setUpperBound1(parseInt(e.target.value, 10) || 0)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
-              min={lowerBound1 + 1}
-            />
-          </div>
-           <div>
-            <label htmlFor="lowerBound2" className="block text-sm font-medium text-slate-400 mb-2">Second Number (Lower)</label>
-            <input
-              id="lowerBound2"
-              type="number"
-              value={lowerBound2}
-              onChange={(e) => setLowerBound2(parseInt(e.target.value, 10) || 0)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
-              min="0"
-            />
-          </div>
-          <div>
-            <label htmlFor="upperBound2" className="block text-sm font-medium text-slate-400 mb-2">Second Number (Upper)</label>
-            <input
-              id="upperBound2"
-              type="number"
-              value={upperBound2}
-              onChange={(e) => setUpperBound2(parseInt(e.target.value, 10) || 0)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
-              min={lowerBound2 + 1}
-            />
-          </div>
-        </div>
+        )}
         <div>
           <label htmlFor="numQuestions" className="block text-sm font-medium text-slate-400 mb-2">Number of Questions</label>
           <input
@@ -152,6 +206,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
             <OperationButton op={Operation.Multiplication} label="Multiply" icon="×" selected={selectedOps.includes(Operation.Multiplication)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Division} label="Divide" icon="÷" selected={selectedOps.includes(Operation.Division)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.EquivalentFractions} label="Fractions" icon="½" selected={selectedOps.includes(Operation.EquivalentFractions)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.GroupingToTarget} label="Grouping" icon="🎯" selected={selectedOps.includes(Operation.GroupingToTarget)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.GroupingByTensHundreds} label="10s/100s" icon="💯" selected={selectedOps.includes(Operation.GroupingByTensHundreds)} onClick={handleOperationToggle} />
           </div>
           {selectedOps.includes(Operation.EquivalentFractions) && (
             <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
@@ -162,7 +218,131 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
               </p>
             </div>
           )}
+          {selectedOps.includes(Operation.GroupingToTarget) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-green-400">Grouping questions:</span> Find missing numbers to reach target values.
+                <br />
+                <span className="text-slate-400 text-xs">Example: 52 + ? = 100 (answer: 48)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.GroupingByTensHundreds) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-purple-400">10s/100s grouping:</span> Find missing multiples of 10 or 100 to reach 100 or 1000.
+                <br />
+                <span className="text-slate-400 text-xs">Examples: 20 + ? = 100 (answer: 80), 300 + ? = 1000 (answer: 700)</span>
+              </p>
+            </div>
+          )}
         </div>
+
+        {/* Custom Mode Toggle */}
+        <div className="flex items-center justify-center space-x-3 py-2">
+          <label htmlFor="customModeToggle" className="text-sm font-medium text-slate-400">
+            Custom Ranges per Operation
+          </label>
+          <button
+            type="button"
+            id="customModeToggle"
+            onClick={() => setCustomMode(!customMode)}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+              customMode ? 'bg-sky-500' : 'bg-slate-600'
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                customMode ? 'translate-x-5' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          <span className="text-sm text-slate-500">
+            {customMode ? 'On' : 'Off'}
+          </span>
+        </div>
+        
+        {customMode && (
+          <div className="mt-2 p-3 bg-slate-700/30 rounded-lg">
+            <p className="text-sm text-slate-300 text-center">
+              <span className="font-semibold text-sky-400">Custom Mode:</span> Set different number ranges for each selected operation.
+              <br />
+              <span className="text-slate-400 text-xs">Each operation will use its own min/max values for generating questions.</span>
+            </p>
+          </div>
+        )}
+
+        {/* Custom Ranges Section */}
+        {customMode && selectedOps.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-slate-200 text-center">Custom Ranges per Operation</h3>
+            {selectedOps.map((op) => {
+              const ranges = operationRanges[op]!;
+              return (
+                <div key={op} className="bg-slate-700/30 p-4 rounded-lg">
+                  <h4 className="text-md font-medium text-slate-300 mb-3 text-center">{getOperationLabel(op)}</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        {op === Operation.GroupingToTarget ? 'Target Value (Lower)' : 
+                         op === Operation.GroupingByTensHundreds ? 'For 100 (10s Lower)' : 'First Number (Lower)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={ranges.lowerBound1}
+                        onChange={(e) => updateOperationRange(op, 'lowerBound1', parseInt(e.target.value, 10) || 0)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        {op === Operation.GroupingToTarget ? 'Target Value (Upper)' : 
+                         op === Operation.GroupingByTensHundreds ? 'For 100 (10s Upper)' : 'First Number (Upper)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={ranges.upperBound1}
+                        onChange={(e) => updateOperationRange(op, 'upperBound1', parseInt(e.target.value, 10) || 0)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                        min={ranges.lowerBound1 + 1}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        {op === Operation.EquivalentFractions ? 'Multiplier (Lower)' : 
+                         op === Operation.GroupingToTarget ? 'Known Number (Lower)' :
+                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Lower)' : 'Second Number (Lower)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={ranges.lowerBound2}
+                        onChange={(e) => updateOperationRange(op, 'lowerBound2', parseInt(e.target.value, 10) || 0)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                        min={op === Operation.EquivalentFractions ? 2 : 0}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        {op === Operation.EquivalentFractions ? 'Denominator (Upper)' : 
+                         op === Operation.GroupingToTarget ? 'Known Number (Upper)' :
+                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Upper)' : 'Second Number (Upper)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={ranges.upperBound2}
+                        onChange={(e) => updateOperationRange(op, 'upperBound2', parseInt(e.target.value, 10) || 0)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                        min={ranges.lowerBound2 + 1}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex items-center justify-center space-x-3 py-2">
           <label htmlFor="soundToggle" className="text-sm font-medium text-slate-400">

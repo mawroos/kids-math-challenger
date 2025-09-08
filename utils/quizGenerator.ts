@@ -43,7 +43,7 @@ function getFactors(num: number): number[] {
 }
 
 export function generateQuestions(settings: QuizSettings): Question[] {
-  const { lowerBound1, upperBound1, lowerBound2, upperBound2, operations, numQuestions } = settings;
+  const { lowerBound1, upperBound1, lowerBound2, upperBound2, operations, numQuestions, customMode, operationRanges } = settings;
   const questions: Question[] = [];
 
   for (let i = 0; i < numQuestions; i++) {
@@ -51,8 +51,24 @@ export function generateQuestions(settings: QuizSettings): Question[] {
     let text = '';
     let correctAnswer = 0;
 
-    let num1 = getRandomInt(lowerBound1, upperBound1);
-    let num2 = getRandomInt(lowerBound2, upperBound2);
+    // Get ranges for this operation
+    let currentLowerBound1, currentUpperBound1, currentLowerBound2, currentUpperBound2;
+    
+    if (customMode && operationRanges && operationRanges[operation]) {
+      const ranges = operationRanges[operation]!;
+      currentLowerBound1 = ranges.lowerBound1;
+      currentUpperBound1 = ranges.upperBound1;
+      currentLowerBound2 = ranges.lowerBound2;
+      currentUpperBound2 = ranges.upperBound2;
+    } else {
+      currentLowerBound1 = lowerBound1;
+      currentUpperBound1 = upperBound1;
+      currentLowerBound2 = lowerBound2;
+      currentUpperBound2 = upperBound2;
+    }
+
+    let num1 = getRandomInt(currentLowerBound1, currentUpperBound1);
+    let num2 = getRandomInt(currentLowerBound2, currentUpperBound2);
 
     switch (operation) {
       case Operation.Addition:
@@ -79,7 +95,7 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         const maxAttempts = 100; // Prevent infinite loops for tricky ranges
 
         while (attempts < maxAttempts) {
-            dividend = getRandomInt(lowerBound1, upperBound1);
+            dividend = getRandomInt(currentLowerBound1, currentUpperBound1);
             
             // Skip 0 as a dividend for typical quiz questions.
             if (dividend === 0) {
@@ -89,7 +105,7 @@ export function generateQuestions(settings: QuizSettings): Question[] {
 
             const allFactors = getFactors(dividend);
             
-            const validDivisors = allFactors.filter(f => f >= lowerBound2 && f <= upperBound2);
+            const validDivisors = allFactors.filter(f => f >= currentLowerBound2 && f <= currentUpperBound2);
             
             // Prefer divisors that aren't 1 or the number itself, for a better challenge.
             const nonTrivialDivisors = validDivisors.filter(d => d !== 1 && d !== dividend);
@@ -112,7 +128,7 @@ export function generateQuestions(settings: QuizSettings): Question[] {
 
         // Fallback if the loop couldn't find a suitable division problem.
         if (!text) {
-          divisor = getRandomInt(lowerBound2 === 0 ? 1 : lowerBound2, upperBound2);
+          divisor = getRandomInt(currentLowerBound2 === 0 ? 1 : currentLowerBound2, currentUpperBound2);
           dividend = divisor;
           text = `${dividend} ÷ ${divisor} = ?`;
           correctAnswer = 1;
@@ -121,14 +137,14 @@ export function generateQuestions(settings: QuizSettings): Question[] {
       }
       case Operation.EquivalentFractions: {
         // Generate a simple fraction
-        const baseDenominator = getRandomInt(Math.max(2, lowerBound2), Math.min(12, upperBound2)); // Keep denominators reasonable
+        const baseDenominator = getRandomInt(Math.max(2, currentLowerBound2), Math.min(12, currentUpperBound2)); // Keep denominators reasonable
         const baseNumerator = getRandomInt(1, baseDenominator - 1); // Ensure proper fraction
         
         // Simplify the base fraction
         const simplified = simplifyFraction(baseNumerator, baseDenominator);
         
         // Generate a multiplier to create equivalent fraction
-        const multiplier = getRandomInt(2, Math.min(6, Math.max(2, upperBound1))); // Keep multipliers reasonable
+        const multiplier = getRandomInt(2, Math.min(6, Math.max(2, currentUpperBound1))); // Keep multipliers reasonable
         
         const equivalentNumerator = simplified.numerator * multiplier;
         const equivalentDenominator = simplified.denominator * multiplier;
@@ -142,6 +158,62 @@ export function generateQuestions(settings: QuizSettings): Question[] {
           // Show equivalent, ask for simplified
           text = `\\frac{${equivalentNumerator}}{${equivalentDenominator}} = \\frac{${simplified.numerator}}{?}`;
           correctAnswer = simplified.denominator;
+        }
+        break;
+      }
+      case Operation.GroupingToTarget: {
+        // Use currentLowerBound1 and currentUpperBound1 for target values (like 100, 1000)
+        // Use currentLowerBound2 and currentUpperBound2 for the known number range
+        
+        const targetValues = [];
+        for (let target = currentLowerBound1; target <= currentUpperBound1; target += 
+             (target < 100 ? 10 : target < 1000 ? 100 : 1000)) {
+          if (target % 10 === 0) targetValues.push(target); // Only round targets
+        }
+        
+        const target = targetValues[getRandomInt(0, targetValues.length - 1)] || 100;
+        const knownNumber = getRandomInt(currentLowerBound2, Math.min(currentUpperBound2, target - 1));
+        
+        // Randomly choose between addition to target or subtraction from target
+        if (getRandomInt(0, 1) === 0) {
+          // Addition to target: knownNumber + ? = target
+          text = `${knownNumber} + ? = ${target}`;
+          correctAnswer = target - knownNumber;
+        } else {
+          // Subtraction from target: target - ? = knownNumber
+          text = `${target} - ? = ${knownNumber}`;
+          correctAnswer = target - knownNumber;
+        }
+        break;
+      }
+      case Operation.GroupingByTensHundreds: {
+        // Create questions with multiples of 10s and 100s to reach 100 or 1000
+        // Examples: 20 + ? = 100, 300 + ? = 1000
+        
+        // Define target values (100 and 1000)
+        const targets = [100, 1000];
+        const target = targets[getRandomInt(0, targets.length - 1)];
+        
+        let knownNumber;
+        if (target === 100) {
+          // For target 100, use multiples of 10 from 10 to 90
+          const multiplier = getRandomInt(1, 9); // 1-9 to get 10-90
+          knownNumber = multiplier * 10;
+        } else {
+          // For target 1000, use multiples of 100 from 100 to 900
+          const multiplier = getRandomInt(1, 9); // 1-9 to get 100-900
+          knownNumber = multiplier * 100;
+        }
+        
+        // Randomly choose between addition to target or subtraction from target
+        if (getRandomInt(0, 1) === 0) {
+          // Addition to target: knownNumber + ? = target
+          text = `${knownNumber} + ? = ${target}`;
+          correctAnswer = target - knownNumber;
+        } else {
+          // Subtraction from target: target - ? = knownNumber
+          text = `${target} - ? = ${knownNumber}`;
+          correctAnswer = target - knownNumber;
         }
         break;
       }

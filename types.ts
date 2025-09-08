@@ -4,6 +4,18 @@ export enum Operation {
   Multiplication = 'multiplication',
   Division = 'division',
   EquivalentFractions = 'equivalent-fractions',
+  GroupingToTarget = 'grouping-to-target',
+  GroupingByTensHundreds = 'grouping-by-tens-hundreds',
+}
+
+export interface OperationRanges {
+  [Operation.Addition]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.Subtraction]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.Multiplication]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.Division]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.EquivalentFractions]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.GroupingToTarget]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.GroupingByTensHundreds]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
 }
 
 export interface QuizSettings {
@@ -14,6 +26,8 @@ export interface QuizSettings {
   operations: Operation[];
   numQuestions: number;
   soundEnabled?: boolean;
+  customMode?: boolean;
+  operationRanges?: Partial<OperationRanges>;
 }
 
 export interface Question {

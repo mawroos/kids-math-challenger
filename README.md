@@ -11,6 +11,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1G_dfbNrofVGtKKO3fFvWPj
 ## Features
 
 - **Custom Quiz Generation**: Configure number ranges, operations, and question count (up to 500 questions)
+- **Custom Ranges per Operation**: Advanced mode allowing different number ranges for each operation type
 - **Multiple Math Operations**: Addition, Subtraction, Multiplication, Division, and **Equivalent Fractions**
 - **Fraction Support**: Interactive fraction questions with visual rendering (e.g., ½ = ?/4)
 - **Session Persistence**: Your quiz progress is automatically saved for 24 hours. If you refresh the page or close the browser, you can continue where you left off
@@ -18,6 +19,17 @@ View your app in AI Studio: https://ai.studio/apps/drive/1G_dfbNrofVGtKKO3fFvWPj
 - **Real-time Feedback**: Instant visual feedback with checkmarks for correct answers and X marks for incorrect ones
 - **Timer**: Track how long it takes to complete your quiz
 - **Cancel Quiz**: Option to cancel and restart at any time
+
+## Setup Modes
+
+### Standard Mode
+- Set global number ranges that apply to all selected operations
+- Simple and quick setup for general practice
+
+### Custom Mode
+- Configure unique number ranges for each operation
+- Perfect for targeted practice or mixed difficulty levels
+- Example: Easy addition (1-10) with harder multiplication (1-100)
 
 ## Question Types
 
