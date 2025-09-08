@@ -3,10 +3,12 @@ import { Question, QuizResults } from '../types';
 import CheckIcon from './icons/CheckIcon';
 import XIcon from './icons/XIcon';
 import { soundEffects } from '../utils/soundEffects';
+import { sessionStorageUtils } from '../utils/sessionStorage';
 
 interface QuizScreenProps {
   questions: Question[];
   onFinishQuiz: (results: QuizResults) => void;
+  onCancel: () => void;
   soundEnabled: boolean;
 }
 
@@ -18,18 +20,43 @@ const Timer: React.FC<{ time: number }> = ({ time }) => {
   };
 
   return (
-    <div className="text-2xl font-mono bg-slate-900 px-4 py-2 rounded-lg border border-slate-700">
+    <div className="text-2xl font-mono bg-slate-800 text-slate-100 px-5 py-3 rounded-lg border border-slate-600 shadow-lg">
       {formatTime(time)}
     </div>
   );
 };
 
-const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, soundEnabled }) => {
+const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCancel, soundEnabled }) => {
   const [userAnswers, setUserAnswers] = useState<Record<number, string>>({});
   const [time, setTime] = useState(0);
   // Fix: Replaced NodeJS.Timeout with ReturnType<typeof setInterval> for browser compatibility.
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Load saved user answers and time from session storage
+  useEffect(() => {
+    const sessionData = sessionStorageUtils.loadSession();
+    if (sessionData && sessionData.userAnswers) {
+      setUserAnswers(sessionData.userAnswers);
+    }
+    if (sessionData && sessionData.time) {
+      setTime(sessionData.time);
+    }
+  }, []);
+
+  // Save user answers to session storage whenever they change
+  useEffect(() => {
+    if (Object.keys(userAnswers).length > 0) {
+      sessionStorageUtils.updateUserAnswers(userAnswers);
+    }
+  }, [userAnswers]);
+
+  // Save time to session storage periodically
+  useEffect(() => {
+    if (time > 0) {
+      sessionStorageUtils.updateTime(time);
+    }
+  }, [time]);
 
   useEffect(() => {
     timerRef.current = setInterval(() => {
@@ -85,18 +112,25 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, soundE
     }
     
     onFinishQuiz({ score, total: questions.length, time });
-  }, [questions, userAnswers, time, onFinishQuiz]);
+  }, [questions, userAnswers, time, onFinishQuiz, soundEnabled]);
+
+  const handleCancel = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    onCancel();
+  }, [onCancel]);
 
   const allAnswered = Object.keys(userAnswers).length === questions.length && Object.values(userAnswers).every(v => v !== '');
 
   return (
     <div className="animate-fade-in">
-        <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-slate-200">Quiz in Progress</h2>
+        <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold text-slate-100">Quiz in Progress</h2>
             <Timer time={time} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {questions.map((q, index) => {
                 const userAnswerStr = userAnswers[q.id];
                 const userAnswerNum = parseInt(userAnswerStr, 10);
@@ -109,17 +143,18 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, soundE
                 }
 
                 return (
-                    <div key={q.id} className={`bg-slate-900/50 p-4 rounded-lg border-2 ${borderColor} transition-colors duration-300 flex items-center space-x-4`}>
-                        <span className="text-lg font-medium text-slate-400 w-2/5">{q.text}</span>
+                    <div key={q.id} className={`bg-slate-800/80 p-5 rounded-lg border-2 ${borderColor} transition-colors duration-300 flex items-center space-x-4 shadow-lg`}>
+                        <span className="text-xl font-semibold text-slate-100 flex-1 leading-relaxed">{q.text}</span>
                         <input
                             type="number"
                             // FIX: The ref callback should not return a value. Using a block body `{}` ensures the arrow function returns void.
                             ref={el => { inputRefs.current[index] = el; }}
                             value={userAnswerStr || ''}
                             onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                            className="flex-grow bg-slate-800 border border-slate-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
+                            className="w-28 bg-slate-700 border border-slate-500 rounded-md px-3 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400"
+                            placeholder="?"
                         />
-                        <div className="w-6 h-6">
+                        <div className="w-7 h-7 flex items-center justify-center">
                             {isAnswered && (isCorrect ? <CheckIcon /> : <XIcon />)}
                         </div>
                     </div>
@@ -127,7 +162,13 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, soundE
             })}
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+                onClick={handleCancel}
+                className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-200"
+            >
+                Cancel Quiz
+            </button>
             <button
                 onClick={finishQuiz}
                 disabled={!allAnswered}

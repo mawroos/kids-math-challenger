@@ -8,6 +8,24 @@ This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1G_dfbNrofVGtKKO3fFvWPjozxLvna40e
 
+## Features
+
+- **Custom Quiz Generation**: Configure number ranges, operations, and question count (up to 500 questions)
+- **Session Persistence**: Your quiz progress is automatically saved for 24 hours. If you refresh the page or close the browser, you can continue where you left off
+- **Sound Effects**: Optional audio feedback for correct/incorrect answers and celebration sounds
+- **Real-time Feedback**: Instant visual feedback with checkmarks for correct answers and X marks for incorrect ones
+- **Timer**: Track how long it takes to complete your quiz
+
+## Session Storage
+
+The app automatically saves your progress including:
+- Current quiz state (setup, in-progress, or results)
+- All questions and your answers
+- Timer progress
+- Quiz settings
+
+Session data expires after 24 hours and can be manually cleared using the "Clear Saved Session" button on the setup screen.
+
 ## Run Locally
 
 **Prerequisites:**  Node.js

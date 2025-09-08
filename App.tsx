@@ -1,16 +1,45 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { QuizSettings, Question, QuizResults, AppState } from './types';
 import SetupScreen from './components/SetupScreen';
 import QuizScreen from './components/QuizScreen';
 import ResultsScreen from './components/ResultsScreen';
 import { generateQuestions } from './utils/quizGenerator';
+import { sessionStorageUtils } from './utils/sessionStorage';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.SETUP);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quizResults, setQuizResults] = useState<QuizResults | null>(null);
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
+  const [sessionRestored, setSessionRestored] = useState<boolean>(false);
+
+  // Load session data on mount
+  useEffect(() => {
+    const sessionData = sessionStorageUtils.loadSession();
+    if (sessionData) {
+      setAppState(sessionData.appState);
+      setQuestions(sessionData.questions);
+      setQuizResults(sessionData.quizResults);
+      setQuizSettings(sessionData.quizSettings);
+      setSessionRestored(true);
+      
+      // Hide the notification after 3 seconds
+      setTimeout(() => setSessionRestored(false), 3000);
+    }
+  }, []);
+
+  // Save session data whenever state changes
+  useEffect(() => {
+    if (appState !== AppState.SETUP || questions.length > 0 || quizResults || quizSettings) {
+      sessionStorageUtils.saveSession({
+        appState,
+        questions,
+        quizResults,
+        quizSettings
+      });
+    }
+  }, [appState, questions, quizResults, quizSettings]);
 
   const handleStartQuiz = useCallback((settings: QuizSettings) => {
     setQuizSettings(settings);
@@ -23,17 +52,26 @@ const App: React.FC = () => {
     setAppState(AppState.RESULTS);
   }, []);
 
+  const handleCancelQuiz = useCallback(() => {
+    setQuestions([]);
+    setQuizResults(null);
+    setQuizSettings(null);
+    setAppState(AppState.SETUP);
+    sessionStorageUtils.clearSession();
+  }, []);
+
   const handleRestart = useCallback(() => {
     setQuestions([]);
     setQuizResults(null);
     setQuizSettings(null);
     setAppState(AppState.SETUP);
+    sessionStorageUtils.clearSession();
   }, []);
 
   const renderContent = () => {
     switch (appState) {
       case AppState.QUIZ:
-        return <QuizScreen questions={questions} onFinishQuiz={handleFinishQuiz} soundEnabled={quizSettings?.soundEnabled ?? true} />;
+        return <QuizScreen questions={questions} onFinishQuiz={handleFinishQuiz} onCancel={handleCancelQuiz} soundEnabled={quizSettings?.soundEnabled ?? true} />;
       case AppState.RESULTS:
         return <ResultsScreen results={quizResults!} onRestart={handleRestart} soundEnabled={quizSettings?.soundEnabled ?? true} />;
       case AppState.SETUP:
@@ -44,6 +82,13 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4 font-sans">
+      {/* Session restored notification */}
+      {sessionRestored && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+          Session restored! Your progress has been saved.
+        </div>
+      )}
+      
       <div className="w-full max-w-4xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-cyan-300">
