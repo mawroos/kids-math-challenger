@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { QuizSettings, Operation, OperationRanges } from '../types';
 import { sessionStorageUtils } from '../utils/sessionStorage';
+import { urlUtils } from '../utils/urlUtils';
+import QRCodeGenerator from './QRCodeGenerator';
 
 interface SetupScreenProps {
   onStartQuiz: (settings: QuizSettings) => void;
@@ -39,6 +41,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const [customMode, setCustomMode] = useState<boolean>(false);
+  const [shareableUrl, setShareableUrl] = useState<string>('');
+  const [showUrlSection, setShowUrlSection] = useState<boolean>(false);
   
   // Initialize operation ranges with default values
   const [operationRanges, setOperationRanges] = useState<Partial<OperationRanges>>({
@@ -46,7 +50,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
     [Operation.Subtraction]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
     [Operation.Multiplication]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
     [Operation.Division]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
-    [Operation.EquivalentFractions]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 12 },
+    [Operation.FractionEquivalents]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 12 },
+    [Operation.FractionAddition]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
+    [Operation.FractionMultiplication]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
+    [Operation.FractionDivision]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
     [Operation.GroupingToTarget]: { lowerBound1: 100, upperBound1: 1000, lowerBound2: 1, upperBound2: 99 },
     [Operation.GroupingByTensHundreds]: { lowerBound1: 10, upperBound1: 90, lowerBound2: 100, upperBound2: 900 },
   });
@@ -78,7 +85,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
       case Operation.Subtraction: return 'Subtraction';
       case Operation.Multiplication: return 'Multiplication';
       case Operation.Division: return 'Division';
-      case Operation.EquivalentFractions: return 'Equivalent Fractions';
+      case Operation.FractionEquivalents: return 'Fraction Equivalents';
+      case Operation.FractionAddition: return 'Fraction Addition';
+      case Operation.FractionMultiplication: return 'Fraction Multiplication';
+      case Operation.FractionDivision: return 'Fraction Division';
       case Operation.GroupingToTarget: return 'Grouping to Target';
       case Operation.GroupingByTensHundreds: return 'Grouping by 10s/100s';
       default: return '';
@@ -121,6 +131,65 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
       customMode,
       operationRanges: customMode ? operationRanges : undefined,
     });
+  };
+
+  const generateShareableLink = () => {
+    if (selectedOps.length === 0) {
+      setError('Please select at least one operation to generate a link.');
+      return;
+    }
+    
+    if (customMode) {
+      // Validate custom ranges for each selected operation
+      for (const op of selectedOps) {
+        const ranges = operationRanges[op];
+        if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || ranges.lowerBound2 >= ranges.upperBound2) {
+          setError(`Invalid ranges for ${getOperationLabel(op)}. Lower bounds must be less than upper bounds.`);
+          return;
+        }
+      }
+    } else {
+      // Validate global ranges
+      if (lowerBound1 >= upperBound1 || lowerBound2 >= upperBound2) {
+        setError('Lower bound must be less than its corresponding upper bound.');
+        return;
+      }
+    }
+    
+    setError('');
+    
+    const settings: QuizSettings = {
+      lowerBound1,
+      upperBound1,
+      lowerBound2,
+      upperBound2,
+      numQuestions,
+      operations: selectedOps,
+      soundEnabled,
+      customMode,
+      operationRanges: customMode ? operationRanges : undefined,
+    };
+    
+    const url = urlUtils.generateShareableUrl(settings);
+    setShareableUrl(url);
+    setShowUrlSection(true);
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shareableUrl);
+      // Show success feedback
+      const button = document.getElementById('copy-button');
+      if (button) {
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+          button.textContent = originalText;
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
   };
 
   return (
@@ -205,16 +274,46 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
             <OperationButton op={Operation.Subtraction} label="Subtract" icon="-" selected={selectedOps.includes(Operation.Subtraction)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Multiplication} label="Multiply" icon="×" selected={selectedOps.includes(Operation.Multiplication)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Division} label="Divide" icon="÷" selected={selectedOps.includes(Operation.Division)} onClick={handleOperationToggle} />
-            <OperationButton op={Operation.EquivalentFractions} label="Fractions" icon="½" selected={selectedOps.includes(Operation.EquivalentFractions)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.FractionEquivalents} label="Equivalents" icon="½" selected={selectedOps.includes(Operation.FractionEquivalents)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.FractionAddition} label="Frac +" icon="⅓" selected={selectedOps.includes(Operation.FractionAddition)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.FractionMultiplication} label="Frac ×" icon="¼" selected={selectedOps.includes(Operation.FractionMultiplication)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.FractionDivision} label="Frac ÷" icon="⅕" selected={selectedOps.includes(Operation.FractionDivision)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.GroupingToTarget} label="Grouping" icon="🎯" selected={selectedOps.includes(Operation.GroupingToTarget)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.GroupingByTensHundreds} label="10s/100s" icon="💯" selected={selectedOps.includes(Operation.GroupingByTensHundreds)} onClick={handleOperationToggle} />
           </div>
-          {selectedOps.includes(Operation.EquivalentFractions) && (
+          {selectedOps.includes(Operation.FractionEquivalents) && (
             <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
               <p className="text-sm text-slate-300 text-center">
-                <span className="font-semibold text-sky-400">Fraction questions:</span> Find equivalent fractions by determining missing numerators or denominators.
+                <span className="font-semibold text-sky-400">Fraction equivalents:</span> Find equivalent fractions by determining missing numerators or denominators.
                 <br />
                 <span className="text-slate-400 text-xs">Example: ½ = ?/4 (answer: 2)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.FractionAddition) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-blue-400">Fraction addition:</span> Add fractions with same denominators.
+                <br />
+                <span className="text-slate-400 text-xs">Example: ⅓ + ⅓ = ?/3 (answer: 2)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.FractionMultiplication) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-orange-400">Fraction multiplication:</span> Multiply fractions and simplify results.
+                <br />
+                <span className="text-slate-400 text-xs">Example: ½ × ⅓ = ?/6 (answer: 1)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.FractionDivision) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-red-400">Fraction division:</span> Divide fractions using the multiply-by-reciprocal rule.
+                <br />
+                <span className="text-slate-400 text-xs">Example: ½ ÷ ¼ = ?/1 (answer: 2)</span>
               </p>
             </div>
           )}
@@ -311,7 +410,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
-                        {op === Operation.EquivalentFractions ? 'Multiplier (Lower)' : 
+                        {op === Operation.FractionEquivalents ? 'Multiplier (Lower)' : 
                          op === Operation.GroupingToTarget ? 'Known Number (Lower)' :
                          op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Lower)' : 'Second Number (Lower)'}
                       </label>
@@ -320,12 +419,12 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
                         value={ranges.lowerBound2}
                         onChange={(e) => updateOperationRange(op, 'lowerBound2', parseInt(e.target.value, 10) || 0)}
                         className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition"
-                        min={op === Operation.EquivalentFractions ? 2 : 0}
+                        min={op === Operation.FractionEquivalents || op === Operation.FractionAddition || op === Operation.FractionMultiplication || op === Operation.FractionDivision ? 2 : 0}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
-                        {op === Operation.EquivalentFractions ? 'Denominator (Upper)' : 
+                        {op === Operation.FractionEquivalents ? 'Denominator (Upper)' : 
                          op === Operation.GroupingToTarget ? 'Known Number (Upper)' :
                          op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Upper)' : 'Second Number (Upper)'}
                       </label>
@@ -370,10 +469,74 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
 
         {error && <p className="text-red-400 text-center">{error}</p>}
         
-        <div className="pt-4">
-            <button type="submit" className="w-full bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-200">
-                Start Quiz
+        {/* Shareable Link Section */}
+        <div className="border-t border-slate-700 pt-6">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={generateShareableLink}
+              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-200"
+            >
+              🔗 Generate Shareable Link
             </button>
+            <button
+              type="submit"
+              className="flex-1 bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-200"
+            >
+              ▶️ Start Quiz
+            </button>
+          </div>
+        </div>
+
+        {/* URL Display Section */}
+        {showUrlSection && shareableUrl && (
+          <div className="mt-4 p-4 bg-slate-700/50 rounded-lg border border-slate-600">
+            <h3 className="text-sm font-semibold text-slate-300 mb-3">Shareable Quiz Link:</h3>
+            
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={shareableUrl}
+                readOnly
+                className="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-300 font-mono"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <button
+                id="copy-button"
+                type="button"
+                onClick={copyToClipboard}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors"
+              >
+                Copy
+              </button>
+            </div>
+            
+            <div className="border-t border-slate-600 pt-4">
+              <div className="grid lg:grid-cols-1 gap-6 items-start">
+               
+                  <p className="text-xs text-slate-400 mb-2">
+                    Share this link with others to start a quiz with these exact settings!
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    💡 <strong>Tip:</strong> The QR code is perfect for quickly sharing with mobile devices or projecting in classrooms.
+                  </p>
+                
+                
+                <div className="flex justify-center items-center">
+                  <div className="w-full max-w-lg flex justify-center">
+                    <QRCodeGenerator 
+                      url={shareableUrl} 
+                      size={500}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div className="pt-4">
         </div>
       </form>
     </div>

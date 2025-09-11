@@ -135,7 +135,7 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         }
         break;
       }
-      case Operation.EquivalentFractions: {
+      case Operation.FractionEquivalents: {
         // Generate a simple fraction
         const baseDenominator = getRandomInt(Math.max(2, currentLowerBound2), Math.min(12, currentUpperBound2)); // Keep denominators reasonable
         const baseNumerator = getRandomInt(1, baseDenominator - 1); // Ensure proper fraction
@@ -157,6 +157,65 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         } else {
           // Show equivalent, ask for simplified
           text = `\\frac{${equivalentNumerator}}{${equivalentDenominator}} = \\frac{${simplified.numerator}}{?}`;
+          correctAnswer = simplified.denominator;
+        }
+        break;
+      }
+      case Operation.FractionAddition: {
+        // Generate two fractions with same denominator for addition
+        const denominator = getRandomInt(Math.max(2, currentLowerBound2), Math.min(12, currentUpperBound2));
+        const numerator1 = getRandomInt(1, Math.min(currentUpperBound1, denominator - 1));
+        const numerator2 = getRandomInt(1, Math.min(currentUpperBound1, denominator - numerator1 - 1)); // Ensure sum < denominator
+        
+        const sumNumerator = numerator1 + numerator2;
+        
+        text = `\\frac{${numerator1}}{${denominator}} + \\frac{${numerator2}}{${denominator}} = \\frac{?}{${denominator}}`;
+        correctAnswer = sumNumerator;
+        break;
+      }
+      case Operation.FractionMultiplication: {
+        // Generate two simple fractions for multiplication
+        const denom1 = getRandomInt(Math.max(2, currentLowerBound2), Math.min(8, currentUpperBound2));
+        const denom2 = getRandomInt(Math.max(2, currentLowerBound2), Math.min(8, currentUpperBound2));
+        const num1 = getRandomInt(1, Math.min(currentUpperBound1, denom1 - 1));
+        const num2 = getRandomInt(1, Math.min(currentUpperBound1, denom2 - 1));
+        
+        const resultNum = num1 * num2;
+        const resultDenom = denom1 * denom2;
+        
+        // Simplify the result
+        const simplified = simplifyFraction(resultNum, resultDenom);
+        
+        // Randomly ask for numerator or denominator of the simplified result
+        if (getRandomInt(0, 1) === 0) {
+          text = `\\frac{${num1}}{${denom1}} \\times \\frac{${num2}}{${denom2}} = \\frac{?}{${simplified.denominator}}`;
+          correctAnswer = simplified.numerator;
+        } else {
+          text = `\\frac{${num1}}{${denom1}} \\times \\frac{${num2}}{${denom2}} = \\frac{${simplified.numerator}}{?}`;
+          correctAnswer = simplified.denominator;
+        }
+        break;
+      }
+      case Operation.FractionDivision: {
+        // Generate division of fractions (a/b ÷ c/d = a/b × d/c)
+        const denom1 = getRandomInt(Math.max(2, currentLowerBound2), Math.min(8, currentUpperBound2));
+        const denom2 = getRandomInt(Math.max(2, currentLowerBound2), Math.min(8, currentUpperBound2));
+        const num1 = getRandomInt(1, Math.min(currentUpperBound1, denom1 - 1));
+        const num2 = getRandomInt(1, Math.min(currentUpperBound1, denom2 - 1));
+        
+        // Result of division: (num1/denom1) ÷ (num2/denom2) = (num1 × denom2) / (denom1 × num2)
+        const resultNum = num1 * denom2;
+        const resultDenom = denom1 * num2;
+        
+        // Simplify the result
+        const simplified = simplifyFraction(resultNum, resultDenom);
+        
+        // Randomly ask for numerator or denominator of the simplified result
+        if (getRandomInt(0, 1) === 0) {
+          text = `\\frac{${num1}}{${denom1}} \\div \\frac{${num2}}{${denom2}} = \\frac{?}{${simplified.denominator}}`;
+          correctAnswer = simplified.numerator;
+        } else {
+          text = `\\frac{${num1}}{${denom1}} \\div \\frac{${num2}}{${denom2}} = \\frac{${simplified.numerator}}{?}`;
           correctAnswer = simplified.denominator;
         }
         break;

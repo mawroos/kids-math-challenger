@@ -6,6 +6,7 @@ import QuizScreen from './components/QuizScreen';
 import ResultsScreen from './components/ResultsScreen';
 import { generateQuestions } from './utils/quizGenerator';
 import { sessionStorageUtils } from './utils/sessionStorage';
+import { urlUtils } from './utils/urlUtils';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.SETUP);
@@ -13,9 +14,32 @@ const App: React.FC = () => {
   const [quizResults, setQuizResults] = useState<QuizResults | null>(null);
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
   const [sessionRestored, setSessionRestored] = useState<boolean>(false);
+  const [isFromUrl, setIsFromUrl] = useState<boolean>(false);
 
   // Load session data on mount
   useEffect(() => {
+    // First, check for URL parameters (takes priority over session)
+    const urlParams = urlUtils.getCurrentUrlParams();
+    if (urlParams) {
+      const urlSettings = urlUtils.decodeQuizSettings(urlParams);
+      if (urlSettings) {
+        // Auto-start quiz from URL parameters
+        setQuizSettings(urlSettings);
+        setQuestions(generateQuestions(urlSettings));
+        setAppState(AppState.QUIZ);
+        setSessionRestored(true);
+        setIsFromUrl(true);
+        
+        // Clear URL parameters after processing to keep URL clean
+        urlUtils.updateUrl('');
+        
+        // Hide the notification after 3 seconds
+        setTimeout(() => setSessionRestored(false), 3000);
+        return;
+      }
+    }
+    
+    // If no valid URL parameters, try to load session data
     const sessionData = sessionStorageUtils.loadSession();
     if (sessionData) {
       setAppState(sessionData.appState);
@@ -23,6 +47,7 @@ const App: React.FC = () => {
       setQuizResults(sessionData.quizResults);
       setQuizSettings(sessionData.quizSettings);
       setSessionRestored(true);
+      setIsFromUrl(false);
       
       // Hide the notification after 3 seconds
       setTimeout(() => setSessionRestored(false), 3000);
@@ -85,7 +110,7 @@ const App: React.FC = () => {
       {/* Session restored notification */}
       {sessionRestored && (
         <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
-          Session restored! Your progress has been saved.
+          {isFromUrl ? 'Quiz started from shared link!' : 'Session restored! Your progress has been saved.'}
         </div>
       )}
       

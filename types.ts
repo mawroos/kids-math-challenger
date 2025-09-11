@@ -3,7 +3,10 @@ export enum Operation {
   Subtraction = 'subtraction',
   Multiplication = 'multiplication',
   Division = 'division',
-  EquivalentFractions = 'equivalent-fractions',
+  FractionEquivalents = 'fraction-equivalents',
+  FractionAddition = 'fraction-addition',
+  FractionMultiplication = 'fraction-multiplication',
+  FractionDivision = 'fraction-division',
   GroupingToTarget = 'grouping-to-target',
   GroupingByTensHundreds = 'grouping-by-tens-hundreds',
 }
@@ -13,7 +16,10 @@ export interface OperationRanges {
   [Operation.Subtraction]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.Multiplication]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.Division]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
-  [Operation.EquivalentFractions]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.FractionEquivalents]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.FractionAddition]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.FractionMultiplication]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.FractionDivision]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.GroupingToTarget]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.GroupingByTensHundreds]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
 }

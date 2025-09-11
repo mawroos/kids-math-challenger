@@ -8,13 +8,19 @@ interface MathRendererProps {
 const MathRenderer: React.FC<MathRendererProps> = ({ expression, className = '' }) => {
   // Simple fraction renderer for expressions like \frac{1}{2} = \frac{?}{4}
   const renderFraction = (expr: string) => {
-    const fractionMatch = expr.match(/\\frac\{([^}]+)\}\{([^}]+)\}/g);
+    // First, replace LaTeX symbols with their Unicode equivalents
+    let processedExpr = expr
+      .replace(/\\times/g, '×')
+      .replace(/\\div/g, '÷')
+      .replace(/\\cdot/g, '·');
+    
+    const fractionMatch = processedExpr.match(/\\frac\{([^}]+)\}\{([^}]+)\}/g);
     
     if (!fractionMatch) {
-      return <span className="text-xl">{expr}</span>;
+      return <span className="text-xl">{processedExpr}</span>;
     }
 
-    const parts = expr.split(/\\frac\{[^}]+\}\{[^}]+\}/);
+    const parts = processedExpr.split(/\\frac\{[^}]+\}\{[^}]+\}/);
     const fractions = fractionMatch.map((match, index) => {
       const numeratorMatch = match.match(/\\frac\{([^}]+)\}/);
       const denominatorMatch = match.match(/\}\{([^}]+)\}/);
