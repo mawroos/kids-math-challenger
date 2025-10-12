@@ -200,6 +200,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onLoadSession })
     if (onLoadSession) {
       onLoadSession(sessionId);
     }
+  };
+
   const loadPreset = (presetUrl: string) => {
     // Extract the 'q' parameter from the URL
     const url = new URL(presetUrl);
