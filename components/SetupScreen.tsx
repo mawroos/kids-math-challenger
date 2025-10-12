@@ -192,6 +192,46 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
     }
   };
 
+  const loadPreset = (presetUrl: string) => {
+    // Extract the 'q' parameter from the URL
+    const url = new URL(presetUrl);
+    const params = new URLSearchParams(url.search);
+    const encodedSettings = params.get('q');
+    
+    if (!encodedSettings) {
+      setError('Invalid preset URL');
+      return;
+    }
+    
+    // Decode the settings
+    const settings = urlUtils.decodeQuizSettings(encodedSettings);
+    
+    if (!settings) {
+      setError('Failed to decode preset settings');
+      return;
+    }
+    
+    // Apply the settings
+    setSelectedOps(settings.operations);
+    setNumQuestions(settings.numQuestions);
+    setLowerBound1(settings.lowerBound1);
+    setUpperBound1(settings.upperBound1);
+    setLowerBound2(settings.lowerBound2);
+    setUpperBound2(settings.upperBound2);
+    setSoundEnabled(settings.soundEnabled ?? true);
+    setCustomMode(settings.customMode ?? false);
+    
+    if (settings.customMode && settings.operationRanges) {
+      setOperationRanges(settings.operationRanges);
+    }
+    
+    setError('');
+    // Show a success message
+    const message = '✓ Preset loaded successfully!';
+    setError('');
+    // Could add a success toast here, but for simplicity we'll just clear any errors
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
@@ -203,6 +243,24 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
         >
           Clear Saved Session
         </button>
+      </div>
+      
+      {/* Preset Settings Section */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-sky-900/30 to-purple-900/30 border-2 border-sky-500/30 rounded-lg">
+        <h3 className="text-lg font-semibold text-sky-300 mb-3 text-center">Quick Start Presets</h3>
+        <p className="text-sm text-slate-400 mb-4 text-center">
+          Load pre-configured quiz settings with one click
+        </p>
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => loadPreset('https://mawroos.github.io/kids-math-challenger/?q=mV_bM_b_k_b_k_b_b_a_p_bM_p_bM_b_E_bs_u_bC_c_d_h_d_m_e_b_g_c_Y_i_bM_qi_b_bL_j_k_bC_bM_oG')}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+          >
+            <span className="text-xl">⭐</span>
+            <span>Samo Nova</span>
+          </button>
+        </div>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
