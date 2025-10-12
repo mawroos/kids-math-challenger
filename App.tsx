@@ -119,7 +119,12 @@ const App: React.FC = () => {
   const handleFinishQuiz = useCallback((results: QuizResults) => {
     setQuizResults(results);
     setAppState(AppState.RESULTS);
-  }, []);
+    
+    // Save completed session to history
+    if (quizSettings) {
+      sessionStorageUtils.saveCompletedSession(questions, results, quizSettings);
+    }
+  }, [questions, quizSettings]);
 
   const handleCancelQuiz = useCallback(() => {
     setQuestions([]);
@@ -137,6 +142,16 @@ const App: React.FC = () => {
     sessionStorageUtils.clearSession();
   }, []);
 
+  const handleLoadSession = useCallback((sessionId: string) => {
+    const session = sessionStorageUtils.loadSessionById(sessionId);
+    if (session) {
+      setQuizSettings(session.settings);
+      setQuestions(session.questions);
+      setQuizResults(session.quizResults);
+      setAppState(AppState.RESULTS);
+    }
+  }, []);
+
   const renderContent = () => {
     switch (appState) {
       case AppState.QUIZ:
@@ -145,7 +160,7 @@ const App: React.FC = () => {
         return <ResultsScreen results={quizResults!} onRestart={handleRestart} soundEnabled={quizSettings?.soundEnabled ?? true} />;
       case AppState.SETUP:
       default:
-        return <SetupScreen onStartQuiz={handleStartQuiz} />;
+        return <SetupScreen onStartQuiz={handleStartQuiz} onLoadSession={handleLoadSession} />;
     }
   };
 

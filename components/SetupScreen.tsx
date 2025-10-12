@@ -3,9 +3,11 @@ import { QuizSettings, Operation, OperationRanges } from '../types';
 import { sessionStorageUtils } from '../utils/sessionStorage';
 import { urlUtils } from '../utils/urlUtils';
 import QRCodeGenerator from './QRCodeGenerator';
+import SessionHistory from './SessionHistory';
 
 interface SetupScreenProps {
   onStartQuiz: (settings: QuizSettings) => void;
+  onLoadSession?: (sessionId: string) => void;
 }
 
 const OperationButton: React.FC<{
@@ -31,7 +33,7 @@ const OperationButton: React.FC<{
   );
 };
 
-const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
+const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onLoadSession }) => {
   const [lowerBound1, setLowerBound1] = useState<number>(1);
   const [upperBound1, setUpperBound1] = useState<number>(10);
   const [lowerBound2, setLowerBound2] = useState<number>(1);
@@ -43,6 +45,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
   const [customMode, setCustomMode] = useState<boolean>(false);
   const [shareableUrl, setShareableUrl] = useState<string>('');
   const [showUrlSection, setShowUrlSection] = useState<boolean>(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
   
   // Initialize operation ranges with default values
   const [operationRanges, setOperationRanges] = useState<Partial<OperationRanges>>({
@@ -192,6 +195,13 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
     }
   };
 
+  const handleLoadSession = (sessionId: string) => {
+    setShowHistory(false);
+    if (onLoadSession) {
+      onLoadSession(sessionId);
+    }
+  };
+
   const loadPreset = (presetUrl: string) => {
     // Extract the 'q' parameter from the URL
     const url = new URL(presetUrl);
@@ -234,15 +244,31 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz }) => {
 
   return (
     <div className="animate-fade-in">
+      {showHistory && (
+        <SessionHistory
+          onLoadSession={handleLoadSession}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-200">Create Your Quiz</h2>
-        <button
-          type="button"
-          onClick={handleClearSession}
-          className="text-sm text-slate-400 hover:text-red-400 transition-colors duration-200"
-        >
-          Clear Saved Session
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setShowHistory(true)}
+            className="text-sm text-sky-400 hover:text-sky-300 transition-colors duration-200"
+          >
+            📚 View History
+          </button>
+          <button
+            type="button"
+            onClick={handleClearSession}
+            className="text-sm text-slate-400 hover:text-red-400 transition-colors duration-200"
+          >
+            Clear Saved Session
+          </button>
+        </div>
       </div>
       
       {/* Preset Settings Section */}
