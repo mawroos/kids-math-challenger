@@ -56,3 +56,50 @@ Session data expires after 24 hours and can be manually cleared using the "Clear
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Build as Android App
+
+The app can be deployed as a native Android mobile app using Capacitor. 
+
+**Prerequisites:**
+- Node.js
+- Android Studio
+- Java JDK 17 or higher
+
+**Steps:**
+
+1. Install dependencies (if not already done):
+   ```bash
+   npm install
+   ```
+
+2. Build the web app for mobile:
+   ```bash
+   npm run build:mobile
+   ```
+
+3. Add Android platform (first time only):
+   ```bash
+   npm run android:add
+   ```
+
+4. Sync the web assets to Android project:
+   ```bash
+   npm run android:sync
+   ```
+
+5. Open Android Studio to build and run:
+   ```bash
+   npm run android:open
+   ```
+
+   Or build and run directly on connected device/emulator:
+   ```bash
+   npm run android:run
+   ```
+
+**Notes:**
+- The Android project is located in the `android/` directory
+- You can customize the app icon, splash screen, and other Android-specific settings in Android Studio
+- The app will run as a native Android application with full access to device capabilities
+- For production builds, use Android Studio to generate a signed APK or AAB file
