@@ -40,7 +40,7 @@ export const sessionStorageUtils = {
         ...data,
         timestamp: Date.now()
       };
-      sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
     } catch (error) {
       console.warn('Failed to save session data:', error);
     }
@@ -48,7 +48,7 @@ export const sessionStorageUtils = {
 
   loadSession: (): QuizSessionData | null => {
     try {
-      const stored = sessionStorage.getItem(SESSION_KEY);
+      const stored = localStorage.getItem(SESSION_KEY);
       if (!stored) return null;
 
       const sessionData: QuizSessionData = JSON.parse(stored);
@@ -69,7 +69,7 @@ export const sessionStorageUtils = {
 
   clearSession: () => {
     try {
-      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_KEY);
     } catch (error) {
       console.warn('Failed to clear session data:', error);
     }
@@ -77,12 +77,12 @@ export const sessionStorageUtils = {
 
   updateUserAnswers: (userAnswers: Record<number, string>) => {
     try {
-      const stored = sessionStorage.getItem(SESSION_KEY);
+      const stored = localStorage.getItem(SESSION_KEY);
       if (stored) {
         const sessionData: QuizSessionData = JSON.parse(stored);
         sessionData.userAnswers = userAnswers;
         sessionData.timestamp = Date.now(); // Update timestamp
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
       }
     } catch (error) {
       console.warn('Failed to update user answers:', error);
@@ -91,12 +91,12 @@ export const sessionStorageUtils = {
 
   updateTime: (time: number) => {
     try {
-      const stored = sessionStorage.getItem(SESSION_KEY);
+      const stored = localStorage.getItem(SESSION_KEY);
       if (stored) {
         const sessionData: QuizSessionData = JSON.parse(stored);
         sessionData.time = time;
         sessionData.timestamp = Date.now(); // Update timestamp
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
       }
     } catch (error) {
       console.warn('Failed to update time:', error);
