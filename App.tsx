@@ -131,7 +131,6 @@ const App: React.FC = () => {
     setQuizResults(null);
     setQuizSettings(null);
     setAppState(AppState.SETUP);
-    sessionStorageUtils.clearSession();
   }, []);
 
   const handleRestart = useCallback(() => {
