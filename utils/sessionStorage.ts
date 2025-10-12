@@ -29,7 +29,7 @@ interface SessionHistory {
 
 const SESSION_KEY = 'mathQuizSession';
 const HISTORY_KEY = 'mathQuizHistory';
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 const HISTORY_DURATION = 365 * 24 * 60 * 60 * 1000; // 1 year in milliseconds
 const MAX_HISTORY_SESSIONS = 100;
 
