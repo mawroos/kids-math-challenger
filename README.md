@@ -1,6 +1,6 @@
 
 
-# Math Quiz Generator
+# Kids Learning Challenger
 
 This contains everything you need to run your app locally.
 
@@ -8,6 +8,7 @@ This contains everything you need to run your app locally.
 
 ## Features
 
+### Math Quiz
 - **Custom Quiz Generation**: Configure number ranges, operations, and question count (up to 500 questions)
 - **Custom Ranges per Operation**: Advanced mode allowing different number ranges for each operation type
 - **Multiple Math Operations**: Addition, Subtraction, Multiplication, Division, and **Equivalent Fractions**
@@ -17,6 +18,13 @@ This contains everything you need to run your app locally.
 - **Real-time Feedback**: Instant visual feedback with checkmarks for correct answers and X marks for incorrect ones
 - **Timer**: Track how long it takes to complete your quiz
 - **Cancel Quiz**: Option to cancel and restart at any time
+
+### Writing Challenges (NEW! ✨)
+- **AI-Powered Poetry Prompts**: Get age-appropriate creative writing prompts tailored to your school year (Years 1-12)
+- **Intelligent Assessment**: Submit your poem and receive AI-powered feedback using Google's Gemini API
+- **Constructive Feedback**: Get encouraging feedback with specific strengths highlighted
+- **Personalized Suggestions**: Receive targeted recommendations to improve your writing skills
+- **Score & Encouragement**: See how well you did with scores from 1-10 and motivating messages
 
 ## Setup Modes
 
@@ -29,12 +37,20 @@ This contains everything you need to run your app locally.
 - Perfect for targeted practice or mixed difficulty levels
 - Example: Easy addition (1-10) with harder multiplication (1-100)
 
-## Question Types
+## Challenge Types
+
+### Math Quiz Question Types
 
 1. **Basic Arithmetic**: Addition, subtraction, multiplication, and division with customizable number ranges
 2. **Equivalent Fractions**: Find missing numerators or denominators in equivalent fractions
    - Example: `½ = ?/4` (Answer: 2)
    - Example: `6/9 = 2/?` (Answer: 3)
+
+### Writing Challenge Types
+
+1. **Poetry Writing**: Write creative poems based on age-appropriate prompts
+   - Prompts are generated dynamically by AI based on your school year
+   - Get detailed feedback on creativity, structure, and language use
 
 ## Session Storage
 
@@ -52,7 +68,21 @@ Session data expires after 24 hours and can be manually cleared using the "Clear
 
 
 1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+   ```bash
+   npm install
+   ```
+
+2. Set up your Gemini API key (required for Writing Challenges):
+   - Create a `.env.local` file in the root directory
+   - Add your Gemini API key:
+     ```
+     GEMINI_API_KEY=your_api_key_here
+     ```
+   - Get your free API key from: https://aistudio.google.com/app/apikey
+
 3. Run the app:
-   `npm run dev`
+   ```bash
+   npm run dev
+   ```
+
+**Note**: Math quizzes work without an API key. The API key is only required for Writing Challenges.

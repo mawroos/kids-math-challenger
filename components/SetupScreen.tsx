@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QuizSettings, Operation, OperationRanges } from '../types';
+import { QuizSettings, Operation, OperationRanges, ChallengeType, WritingChallengeSettings } from '../types';
 import { sessionStorageUtils } from '../utils/sessionStorage';
 import { urlUtils } from '../utils/urlUtils';
 import QRCodeGenerator from './QRCodeGenerator';
@@ -7,6 +7,7 @@ import SessionHistory from './SessionHistory';
 
 interface SetupScreenProps {
   onStartQuiz: (settings: QuizSettings) => void;
+  onStartWritingChallenge?: (settings: WritingChallengeSettings) => void;
   onLoadSession?: (sessionId: string) => void;
 }
 
@@ -33,7 +34,9 @@ const OperationButton: React.FC<{
   );
 };
 
-const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onLoadSession }) => {
+const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingChallenge, onLoadSession }) => {
+  const [challengeType, setChallengeType] = useState<ChallengeType>(ChallengeType.MATH);
+  const [schoolYear, setSchoolYear] = useState<number>(3);
   const [lowerBound1, setLowerBound1] = useState<number>(1);
   const [upperBound1, setUpperBound1] = useState<number>(10);
   const [lowerBound2, setLowerBound2] = useState<number>(1);
@@ -242,6 +245,16 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onLoadSession })
     // Could add a success toast here, but for simplicity we'll just clear any errors
   };
 
+  const handleStartWritingChallenge = () => {
+    if (!onStartWritingChallenge) return;
+    
+    setError('');
+    onStartWritingChallenge({
+      schoolYear,
+      challengeType: 'poem'
+    });
+  };
+
   return (
     <div className="animate-fade-in">
       {showHistory && (
@@ -252,7 +265,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onLoadSession })
       )}
       
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-slate-200">Create Your Quiz</h2>
+        <h2 className="text-2xl font-bold text-slate-200">Create Your Challenge</h2>
         <div className="flex gap-3">
           <button
             type="button"
@@ -270,8 +283,103 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onLoadSession })
           </button>
         </div>
       </div>
+
+      {/* Challenge Type Selector */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-sky-900/30 to-purple-900/30 border-2 border-sky-500/30 rounded-lg">
+        <h3 className="text-lg font-semibold text-sky-300 mb-3 text-center">Choose Challenge Type</h3>
+        <div className="flex gap-4 justify-center">
+          <button
+            type="button"
+            onClick={() => setChallengeType(ChallengeType.MATH)}
+            className={`flex-1 max-w-xs py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
+              challengeType === ChallengeType.MATH
+                ? 'bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-lg scale-105'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-3xl">🔢</span>
+              <span>Math Quiz</span>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setChallengeType(ChallengeType.WRITING)}
+            className={`flex-1 max-w-xs py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
+              challengeType === ChallengeType.WRITING
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-3xl">✍️</span>
+              <span>Writing Challenge</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Writing Challenge Setup */}
+      {challengeType === ChallengeType.WRITING && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-2 border-purple-500/50 rounded-lg p-6">
+            <h3 className="text-xl font-semibold text-purple-300 mb-4">Writing Challenge Settings</h3>
+            <p className="text-slate-300 mb-6">
+              Select your school year to receive an age-appropriate poem writing prompt. 
+              Our AI will assess your creativity and provide helpful feedback!
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="schoolYear" className="block text-sm font-medium text-slate-300 mb-2">
+                  School Year (Age {schoolYear + 5}-{schoolYear + 6})
+                </label>
+                <input
+                  id="schoolYear"
+                  type="range"
+                  min="1"
+                  max="12"
+                  value={schoolYear}
+                  onChange={(e) => setSchoolYear(Number(e.target.value))}
+                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                />
+                <div className="flex justify-between text-sm text-slate-400 mt-2">
+                  <span>Year 1</span>
+                  <span className="text-purple-300 font-semibold">Year {schoolYear}</span>
+                  <span>Year 12</span>
+                </div>
+              </div>
+
+              <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-4">
+                <h4 className="text-purple-300 font-semibold mb-2">✨ What to Expect:</h4>
+                <ul className="text-slate-300 text-sm space-y-1 list-disc list-inside">
+                  <li>Age-appropriate creative writing prompt</li>
+                  <li>AI-powered assessment of your poem</li>
+                  <li>Constructive feedback and encouragement</li>
+                  <li>Suggestions for improvement</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="bg-red-500/20 border border-red-500 rounded-lg p-4">
+              <p className="text-red-300">{error}</p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleStartWritingChallenge}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105"
+          >
+            ✨ Start Writing Challenge
+          </button>
+        </div>
+      )}
       
-      {/* Preset Settings Section */}
+      {/* Preset Settings Section - Only show for Math */}
+      {challengeType === ChallengeType.MATH && (
       <div className="mb-6 p-4 bg-gradient-to-r from-sky-900/30 to-purple-900/30 border-2 border-sky-500/30 rounded-lg">
         <h3 className="text-lg font-semibold text-sky-300 mb-3 text-center">Quick Start Presets</h3>
         <p className="text-sm text-slate-400 mb-4 text-center">
@@ -288,7 +396,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onLoadSession })
           </button>
         </div>
       </div>
+      )}
       
+      {/* Math Quiz Setup */}
+      {challengeType === ChallengeType.MATH && (
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Global Ranges - only show when custom mode is off */}
         {!customMode && (
@@ -623,6 +734,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onLoadSession })
         <div className="pt-4">
         </div>
       </form>
+      )}
     </div>
   );
 };
