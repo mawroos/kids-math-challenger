@@ -25,6 +25,8 @@ jobs:
         run: npm install
 
       - name: Build
+        env:
+          GTM_CONTAINER_ID: ${{ secrets.GTM_CONTAINER_ID }}
         run: npm run build
 
       # If your build output is "dist" (e.g., Vite), change path to: ./dist

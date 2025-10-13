@@ -62,6 +62,37 @@ The app automatically saves your progress including:
 
 Session data expires after 24 hours and can be manually cleared using the "Clear Saved Session" button on the setup screen.
 
+## Analytics & Tracking
+
+This app supports Google Tag Manager (GTM) for tracking usage analytics, including:
+
+### What's Tracked
+- **Geolocation**: Automatic geographic data collection (country, region, city) via Google Analytics in GTM
+- **Device Information**: Browser type, operating system, screen resolution, viewport size
+- **User Interactions**: Quiz starts, completions, scores, and time taken
+- **Writing Challenges**: Challenge starts and completion rates with scores
+- **Page Views**: Navigation and screen transitions within the app
+
+### Privacy & Data
+- All data is collected anonymously through Google Tag Manager
+- No personally identifiable information (PII) is collected
+- Geolocation is approximate (city-level) and provided by Google Analytics based on IP address
+- Users can opt out of tracking by using browser privacy settings or extensions
+
+### Setting Up Analytics
+To enable analytics tracking for your deployment:
+
+1. Create a Google Tag Manager container at https://tagmanager.google.com/
+2. Set up Google Analytics 4 tag within GTM (optional - GTM can manage multiple tracking services)
+3. Get your GTM Container ID (format: GTM-XXXXXXX)
+4. Add it to your `.env.local` file:
+   ```
+   GTM_CONTAINER_ID=GTM-XXXXXXX
+   ```
+5. For GitHub Pages deployment, set the `GTM_CONTAINER_ID` as a repository secret and configure your build workflow to inject it
+
+**Note**: Analytics tracking is optional. The app works fully without it. GTM provides flexibility to add/modify tracking tags without code changes.
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
@@ -72,13 +103,19 @@ Session data expires after 24 hours and can be manually cleared using the "Clear
    npm install
    ```
 
-2. Set up your Gemini API key (required for Writing Challenges):
+2. Set up your API keys:
    - Create a `.env.local` file in the root directory
-   - Add your Gemini API key:
+   - Add your Gemini API key (required for Writing Challenges):
      ```
      GEMINI_API_KEY=your_api_key_here
      ```
    - Get your free API key from: https://aistudio.google.com/app/apikey
+   
+   - (Optional) Add your Google Tag Manager Container ID for tracking:
+     ```
+     GTM_CONTAINER_ID=GTM-XXXXXXX
+     ```
+   - Get your Container ID from: https://tagmanager.google.com/
 
 3. Run the app:
    ```bash
