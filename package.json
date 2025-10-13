@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@types/katex": "^0.16.7",
     "@types/qrcode": "^1.5.5",
     "katex": "^0.16.22",
