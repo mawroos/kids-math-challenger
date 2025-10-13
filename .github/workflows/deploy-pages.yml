@@ -25,6 +25,8 @@ jobs:
         run: npm install
 
       - name: Build
+        env:
+          GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
         run: npm run build
 
       # If your build output is "dist" (e.g., Vite), change path to: ./dist

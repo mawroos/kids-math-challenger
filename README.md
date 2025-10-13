@@ -62,6 +62,36 @@ The app automatically saves your progress including:
 
 Session data expires after 24 hours and can be manually cleared using the "Clear Saved Session" button on the setup screen.
 
+## Analytics & Tracking
+
+This app supports Google Analytics 4 (GA4) for tracking usage analytics, including:
+
+### What's Tracked
+- **Geolocation**: Automatic geographic data collection (country, region, city) via GA4's built-in features
+- **Device Information**: Browser type, operating system, screen resolution, viewport size
+- **User Interactions**: Quiz starts, completions, scores, and time taken
+- **Writing Challenges**: Challenge starts and completion rates with scores
+- **Page Views**: Navigation and screen transitions within the app
+
+### Privacy & Data
+- All data is collected anonymously through Google Analytics 4
+- No personally identifiable information (PII) is collected
+- Geolocation is approximate (city-level) and provided by GA4 based on IP address
+- Users can opt out of tracking by using browser privacy settings or extensions
+
+### Setting Up Analytics
+To enable analytics tracking for your deployment:
+
+1. Create a Google Analytics 4 property at https://analytics.google.com/
+2. Get your Measurement ID (format: G-XXXXXXXXXX)
+3. Add it to your `.env.local` file:
+   ```
+   GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+   ```
+4. For GitHub Pages deployment, set the `GA4_MEASUREMENT_ID` as a repository secret and configure your build workflow to inject it
+
+**Note**: Analytics tracking is optional. The app works fully without it.
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
@@ -72,13 +102,19 @@ Session data expires after 24 hours and can be manually cleared using the "Clear
    npm install
    ```
 
-2. Set up your Gemini API key (required for Writing Challenges):
+2. Set up your API keys:
    - Create a `.env.local` file in the root directory
-   - Add your Gemini API key:
+   - Add your Gemini API key (required for Writing Challenges):
      ```
      GEMINI_API_KEY=your_api_key_here
      ```
    - Get your free API key from: https://aistudio.google.com/app/apikey
+   
+   - (Optional) Add your Google Analytics 4 Measurement ID for tracking:
+     ```
+     GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+     ```
+   - Get your Measurement ID from: https://analytics.google.com/
 
 3. Run the app:
    ```bash

@@ -9,6 +9,7 @@ import WritingResultsScreen from './components/WritingResultsScreen';
 import { generateQuestions } from './utils/quizGenerator';
 import { sessionStorageUtils } from './utils/sessionStorage';
 import { urlUtils } from './utils/urlUtils';
+import { analytics } from './utils/analytics';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.SETUP);
@@ -22,6 +23,14 @@ const App: React.FC = () => {
   const [showSessionConflict, setShowSessionConflict] = useState<boolean>(false);
   const [urlSettingsFromLink, setUrlSettingsFromLink] = useState<QuizSettings | null>(null);
   const [existingSessionData, setExistingSessionData] = useState<any>(null);
+
+  // Initialize Google Analytics on mount
+  useEffect(() => {
+    const ga4MeasurementId = process.env.GA4_MEASUREMENT_ID;
+    if (ga4MeasurementId) {
+      analytics.initialize(ga4MeasurementId);
+    }
+  }, []);
 
   // Load session data on mount
   useEffect(() => {
@@ -118,11 +127,17 @@ const App: React.FC = () => {
     setQuizSettings(settings);
     setQuestions(generateQuestions(settings));
     setAppState(AppState.QUIZ);
+    
+    // Track quiz start
+    analytics.trackQuizStart('math', settings.numQuestions);
   }, []);
 
   const handleFinishQuiz = useCallback((results: QuizResults) => {
     setQuizResults(results);
     setAppState(AppState.RESULTS);
+    
+    // Track quiz completion
+    analytics.trackQuizComplete('math', results.score, results.total, results.time);
     
     // Save completed session to history
     if (quizSettings) {
@@ -164,12 +179,20 @@ const App: React.FC = () => {
   const handleStartWritingChallenge = useCallback((settings: WritingChallengeSettings) => {
     setWritingSettings(settings);
     setAppState(AppState.WRITING_CHALLENGE);
+    
+    // Track writing challenge start
+    analytics.trackWritingChallenge(settings.schoolYear);
   }, []);
 
   const handleFinishWritingChallenge = useCallback((result: WritingChallengeResult) => {
     setWritingResult(result);
     setAppState(AppState.WRITING_RESULTS);
-  }, []);
+    
+    // Track writing challenge completion
+    if (writingSettings) {
+      analytics.trackWritingChallengeComplete(writingSettings.schoolYear, result.assessment.score);
+    }
+  }, [writingSettings]);
 
   const handleCancelWritingChallenge = useCallback(() => {
     setWritingSettings(null);
