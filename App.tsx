@@ -237,7 +237,9 @@ const App: React.FC = () => {
       case AppState.RESULTS:
         return <ResultsScreen results={quizResults!} onRestart={handleRestart} soundEnabled={quizSettings?.soundEnabled ?? true} />;
       case AppState.WRITING_CHALLENGE:
-        return <WritingChallengeScreen settings={writingSettings!} onFinish={handleFinishWritingChallenge} onCancel={handleCancelWritingChallenge} />;
+        return writingSettings ? (
+          <WritingChallengeScreen settings={writingSettings} onFinish={handleFinishWritingChallenge} onCancel={handleCancelWritingChallenge} />
+        ) : null;
       case AppState.WRITING_RESULTS:
         return <WritingResultsScreen result={writingResult!} onRestart={handleRestart} />;
       case AppState.SETUP:
