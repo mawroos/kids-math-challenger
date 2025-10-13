@@ -127,11 +127,25 @@ const App: React.FC = () => {
   }, [questions, quizSettings]);
 
   const handleCancelQuiz = useCallback(() => {
+    // Save incomplete session to history before clearing
+    if (quizSettings && questions.length > 0) {
+      const sessionData = sessionStorageUtils.loadSession();
+      if (sessionData && sessionData.userAnswers && sessionData.time !== undefined) {
+        sessionStorageUtils.saveIncompleteSession(
+          questions,
+          quizSettings,
+          sessionData.userAnswers,
+          sessionData.time,
+          AppState.QUIZ
+        );
+      }
+    }
+    
     setQuestions([]);
     setQuizResults(null);
     setQuizSettings(null);
     setAppState(AppState.SETUP);
-  }, []);
+  }, [questions, quizSettings]);
 
   const handleRestart = useCallback(() => {
     setQuestions([]);
@@ -146,8 +160,28 @@ const App: React.FC = () => {
     if (session) {
       setQuizSettings(session.settings);
       setQuestions(session.questions);
-      setQuizResults(session.quizResults);
-      setAppState(AppState.RESULTS);
+      
+      if (session.isCompleted) {
+        // Load completed session - go to results screen
+        setQuizResults(session.quizResults);
+        setAppState(AppState.RESULTS);
+      } else {
+        // Load incomplete session - restore quiz state and continue
+        setQuizResults(null);
+        setAppState(session.appState || AppState.QUIZ);
+        
+        // Restore user answers and time if available
+        if (session.userAnswers || session.timeTaken) {
+          sessionStorageUtils.saveSession({
+            appState: session.appState || AppState.QUIZ,
+            questions: session.questions,
+            quizResults: null,
+            quizSettings: session.settings,
+            userAnswers: session.userAnswers,
+            time: session.timeTaken,
+          });
+        }
+      }
     }
   }, []);
 
