@@ -1,10 +1,12 @@
-import { Question, QuizResults, QuizSettings, AppState } from '../types';
+import { Question, QuizResults, QuizSettings, AppState, WritingChallengeSettings, WritingChallengeResult } from '../types';
 
 interface QuizSessionData {
   appState: AppState;
   questions: Question[];
   quizResults: QuizResults | null;
   quizSettings: QuizSettings | null;
+  writingSettings?: WritingChallengeSettings | null;
+  writingResult?: WritingChallengeResult | null;
   userAnswers?: Record<number, string>;
   time?: number;
   timestamp: number;
