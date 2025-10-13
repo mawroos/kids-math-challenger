@@ -30,10 +30,7 @@ export const geminiAPI = {
       
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.9,
-          maxOutputTokens: 150,
-        },
+        
       });
       
       const response = result.response;
@@ -45,7 +42,7 @@ export const geminiAPI = {
   },
 
   assessPoem: async (poem: string, prompt: string, schoolYear: number): Promise<PoemAssessment> => {
-    const apiKey = process.env.GEMINI_API_KEY || "AIzaSyDdt8qhAeSQ6FS4S5fIC5SsJTklnpz-VjA";
+    const apiKey = "AIzaSyCJ5eGZ-mfBMLJnGmcksRdX_NxIdW_zMIc"
     
     if (!apiKey) {
       throw new Error('Gemini API key not configured');
@@ -79,14 +76,11 @@ Return ONLY the JSON object, nothing else.`;
 
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: assessmentPrompt }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 500,
-        },
+        
       });
       
       const response = result.response;
