@@ -63,6 +63,8 @@ const App: React.FC = () => {
       setQuestions(sessionData.questions);
       setQuizResults(sessionData.quizResults);
       setQuizSettings(sessionData.quizSettings);
+      setWritingSettings(sessionData.writingSettings || null);
+      setWritingResult(sessionData.writingResult || null);
       setSessionRestored(true);
       setIsFromUrl(false);
       
@@ -100,6 +102,8 @@ const App: React.FC = () => {
       setQuestions(existingSessionData.questions);
       setQuizResults(existingSessionData.quizResults);
       setQuizSettings(existingSessionData.quizSettings);
+      setWritingSettings(existingSessionData.writingSettings || null);
+      setWritingResult(existingSessionData.writingResult || null);
       setSessionRestored(true);
       setIsFromUrl(false);
       
@@ -113,15 +117,17 @@ const App: React.FC = () => {
 
   // Save session data whenever state changes
   useEffect(() => {
-    if (appState !== AppState.SETUP || questions.length > 0 || quizResults || quizSettings) {
+    if (appState !== AppState.SETUP || questions.length > 0 || quizResults || quizSettings || writingSettings || writingResult) {
       sessionStorageUtils.saveSession({
         appState,
         questions,
         quizResults,
-        quizSettings
+        quizSettings,
+        writingSettings,
+        writingResult
       });
     }
-  }, [appState, questions, quizResults, quizSettings]);
+  }, [appState, questions, quizResults, quizSettings, writingSettings, writingResult]);
 
   const handleStartQuiz = useCallback((settings: QuizSettings) => {
     setQuizSettings(settings);
