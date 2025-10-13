@@ -1,12 +1,4 @@
-interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string;
-      }>;
-    };
-  }>;
-}
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface PoemAssessment {
   score: number;
@@ -17,7 +9,7 @@ interface PoemAssessment {
 
 export const geminiAPI = {
   generatePoemPrompt: async (schoolYear: number): Promise<string> => {
-    const apiKey = "AIzaSyDdt8qhAeSQ6FS4S5fIC5SsJTklnpz-VjA" ;
+    const apiKey = "AIzaSyDdt8qhAeSQ6FS4S5fIC5SsJTklnpz-VjA";
     
     if (!apiKey) {
       throw new Error('Gemini API key not configured');
@@ -33,34 +25,19 @@ export const geminiAPI = {
     Return ONLY the prompt text, nothing else. Keep it to 2-3 sentences maximum.`;
 
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: prompt
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.9,
-              maxOutputTokens: 150,
-            }
-          })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data: GeminiResponse = await response.json();
-      return data.candidates[0].content.parts[0].text.trim();
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-exp" });
+      
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 150,
+        },
+      });
+      
+      const response = result.response;
+      return response.text().trim();
     } catch (error) {
       console.error('Error generating poem prompt:', error);
       throw error;
@@ -68,7 +45,7 @@ export const geminiAPI = {
   },
 
   assessPoem: async (poem: string, prompt: string, schoolYear: number): Promise<PoemAssessment> => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || "AIzaSyDdt8qhAeSQ6FS4S5fIC5SsJTklnpz-VjA";
     
     if (!apiKey) {
       throw new Error('Gemini API key not configured');
@@ -101,34 +78,19 @@ Be encouraging and specific. Focus on what they did well first, then gentle sugg
 Return ONLY the JSON object, nothing else.`;
 
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey,
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: assessmentPrompt
-              }]
-            }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 500,
-            }
-          })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
-      }
-
-      const data: GeminiResponse = await response.json();
-      const responseText = data.candidates[0].content.parts[0].text.trim();
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: assessmentPrompt }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 500,
+        },
+      });
+      
+      const response = result.response;
+      const responseText = response.text().trim();
       
       // Extract JSON from response (remove markdown code blocks if present)
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
