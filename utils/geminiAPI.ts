@@ -17,7 +17,7 @@ interface PoemAssessment {
 
 export const geminiAPI = {
   generatePoemPrompt: async (schoolYear: number): Promise<string> => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = "AIzaSyDdt8qhAeSQ6FS4S5fIC5SsJTklnpz-VjA" ;
     
     if (!apiKey) {
       throw new Error('Gemini API key not configured');
@@ -34,7 +34,7 @@ export const geminiAPI = {
 
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: {
