@@ -1,9 +1,11 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { QuizSettings, Question, QuizResults, AppState } from './types';
+import { QuizSettings, Question, QuizResults, AppState, WritingChallengeSettings, WritingChallengeResult } from './types';
 import SetupScreen from './components/SetupScreen';
 import QuizScreen from './components/QuizScreen';
 import ResultsScreen from './components/ResultsScreen';
+import WritingChallengeScreen from './components/WritingChallengeScreen';
+import WritingResultsScreen from './components/WritingResultsScreen';
 import { generateQuestions } from './utils/quizGenerator';
 import { sessionStorageUtils } from './utils/sessionStorage';
 import { urlUtils } from './utils/urlUtils';
@@ -13,6 +15,8 @@ const App: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [quizResults, setQuizResults] = useState<QuizResults | null>(null);
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
+  const [writingSettings, setWritingSettings] = useState<WritingChallengeSettings | null>(null);
+  const [writingResult, setWritingResult] = useState<WritingChallengeResult | null>(null);
   const [sessionRestored, setSessionRestored] = useState<boolean>(false);
   const [isFromUrl, setIsFromUrl] = useState<boolean>(false);
   const [showSessionConflict, setShowSessionConflict] = useState<boolean>(false);
@@ -137,8 +141,26 @@ const App: React.FC = () => {
     setQuestions([]);
     setQuizResults(null);
     setQuizSettings(null);
+    setWritingSettings(null);
+    setWritingResult(null);
     setAppState(AppState.SETUP);
     sessionStorageUtils.clearSession();
+  }, []);
+
+  const handleStartWritingChallenge = useCallback((settings: WritingChallengeSettings) => {
+    setWritingSettings(settings);
+    setAppState(AppState.WRITING_CHALLENGE);
+  }, []);
+
+  const handleFinishWritingChallenge = useCallback((result: WritingChallengeResult) => {
+    setWritingResult(result);
+    setAppState(AppState.WRITING_RESULTS);
+  }, []);
+
+  const handleCancelWritingChallenge = useCallback(() => {
+    setWritingSettings(null);
+    setWritingResult(null);
+    setAppState(AppState.SETUP);
   }, []);
 
   const handleLoadSession = useCallback((sessionId: string) => {
@@ -157,9 +179,13 @@ const App: React.FC = () => {
         return <QuizScreen questions={questions} onFinishQuiz={handleFinishQuiz} onCancel={handleCancelQuiz} soundEnabled={quizSettings?.soundEnabled ?? true} />;
       case AppState.RESULTS:
         return <ResultsScreen results={quizResults!} onRestart={handleRestart} soundEnabled={quizSettings?.soundEnabled ?? true} />;
+      case AppState.WRITING_CHALLENGE:
+        return <WritingChallengeScreen settings={writingSettings!} onFinish={handleFinishWritingChallenge} onCancel={handleCancelWritingChallenge} />;
+      case AppState.WRITING_RESULTS:
+        return <WritingResultsScreen result={writingResult!} onRestart={handleRestart} />;
       case AppState.SETUP:
       default:
-        return <SetupScreen onStartQuiz={handleStartQuiz} onLoadSession={handleLoadSession} />;
+        return <SetupScreen onStartQuiz={handleStartQuiz} onStartWritingChallenge={handleStartWritingChallenge} onLoadSession={handleLoadSession} />;
     }
   };
 
@@ -208,9 +234,9 @@ const App: React.FC = () => {
       <div className="w-full max-w-4xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-cyan-300">
-            Math Quiz Generator
+            Kids Learning Challenger
           </h1>
-          <p className="text-slate-400 mt-2">Sharpen your mind with custom math challenges.</p>
+          <p className="text-slate-400 mt-2">Sharpen your mind with custom math and writing challenges.</p>
         </header>
         <main className="bg-slate-800 rounded-xl shadow-2xl shadow-slate-950/50 p-6 md:p-8 transition-all duration-500">
           {renderContent()}

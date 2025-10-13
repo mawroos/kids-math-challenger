@@ -56,5 +56,29 @@ export interface QuizResults {
 export enum AppState {
     SETUP,
     QUIZ,
-    RESULTS
+    RESULTS,
+    WRITING_CHALLENGE,
+    WRITING_RESULTS
+}
+
+export enum ChallengeType {
+  MATH = 'math',
+  WRITING = 'writing'
+}
+
+export interface WritingChallengeSettings {
+  schoolYear: number;
+  challengeType: 'poem';
+}
+
+export interface WritingChallengeResult {
+  prompt: string;
+  userResponse: string;
+  assessment: {
+    score: number; // 1-10
+    feedback: string;
+    strengths: string[];
+    improvements: string[];
+  };
+  timestamp: number;
 }
