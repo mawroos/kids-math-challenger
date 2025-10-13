@@ -10,6 +10,7 @@ interface CompletedSession {
   totalQuestions: number;
   score: number;
   settings: QuizSettings;
+  isCompleted: boolean;
 }
 
 interface SessionHistoryProps {
@@ -154,14 +155,20 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ onLoadSession, onClose 
                       </div>
                       
                       <div className="flex items-center gap-4 text-sm">
-                        <span className={`font-bold ${getScoreColor(session.score, session.totalQuestions)}`}>
-                          Score: {session.score}/{session.totalQuestions} ({Math.round((session.score / session.totalQuestions) * 100)}%)
-                        </span>
+                        {session.isCompleted ? (
+                          <span className={`font-bold ${getScoreColor(session.score, session.totalQuestions)}`}>
+                            Score: {session.score}/{session.totalQuestions} ({Math.round((session.score / session.totalQuestions) * 100)}%)
+                          </span>
+                        ) : (
+                          <span className="font-bold text-yellow-400">
+                            In Progress
+                          </span>
+                        )}
                         <span className="text-slate-400">
                           ⏱️ {formatTime(session.timeTaken)}
                         </span>
                         <span className="text-slate-400">
-                          📝 {session.questionsAnswered} questions
+                          📝 {session.questionsAnswered}/{session.totalQuestions} questions
                         </span>
                       </div>
                     </div>
@@ -215,7 +222,9 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ onLoadSession, onClose 
                     : 'bg-slate-700 text-slate-500 cursor-not-allowed'
                 }`}
               >
-                Review Selected Session
+                {selectedSession && sessions.find(s => s.id === selectedSession)?.isCompleted 
+                  ? 'Review Selected Session' 
+                  : 'Continue Session'}
               </button>
             </div>
           </>

@@ -19,7 +19,10 @@ interface CompletedSession {
   score: number;
   settings: QuizSettings;
   questions: Question[];
-  quizResults: QuizResults;
+  quizResults: QuizResults | null;
+  isCompleted: boolean;
+  userAnswers?: Record<number, string>;
+  appState?: AppState;
 }
 
 interface SessionHistory {
@@ -122,6 +125,7 @@ export const sessionStorageUtils = {
         settings,
         questions,
         quizResults,
+        isCompleted: true,
       };
 
       // Add new session at the beginning
@@ -136,6 +140,49 @@ export const sessionStorageUtils = {
       localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
     } catch (error) {
       console.warn('Failed to save completed session:', error);
+    }
+  },
+
+  saveIncompleteSession: (
+    questions: Question[],
+    settings: QuizSettings,
+    userAnswers: Record<number, string>,
+    time: number,
+    appState: AppState
+  ) => {
+    try {
+      const history = sessionStorageUtils.loadHistory();
+      
+      // Calculate current progress
+      const answeredCount = Object.keys(userAnswers).filter(key => userAnswers[parseInt(key)] !== '').length;
+      
+      const incompleteSession: CompletedSession = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: Date.now(),
+        timeTaken: time,
+        questionsAnswered: answeredCount,
+        totalQuestions: questions.length,
+        score: 0,
+        settings,
+        questions,
+        quizResults: null,
+        isCompleted: false,
+        userAnswers,
+        appState,
+      };
+
+      // Add new session at the beginning
+      history.sessions.unshift(incompleteSession);
+
+      // Keep only last 100 sessions
+      if (history.sessions.length > MAX_HISTORY_SESSIONS) {
+        history.sessions = history.sessions.slice(0, MAX_HISTORY_SESSIONS);
+      }
+
+      history.timestamp = Date.now();
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch (error) {
+      console.warn('Failed to save incomplete session:', error);
     }
   },
 
