@@ -1,21 +1,21 @@
 # Analytics & Tracking Guide
 
-This guide explains how to set up and use Google Analytics 4 (GA4) for tracking user analytics, geolocations, and device information in the Kids Learning Challenger app.
+This guide explains how to set up and use Google Tag Manager (GTM) for tracking user analytics, geolocations, and device information in the Kids Learning Challenger app.
 
 ## Overview
 
-The app uses **Google Analytics 4 (GA4)**, Google's latest analytics platform, which is perfect for client-side applications deployed on static hosting like GitHub Pages. GA4 doesn't require a backend server and handles all data collection through client-side JavaScript.
+The app uses **Google Tag Manager (GTM)**, Google's tag management system, which is perfect for client-side applications deployed on static hosting like GitHub Pages. GTM provides a flexible container for managing multiple tracking tags (like Google Analytics 4, Facebook Pixel, etc.) without requiring code changes. GTM doesn't require a backend server and handles all data collection through client-side JavaScript.
 
 ## What Data is Tracked?
 
 ### 1. **Geolocation Data** 🌍
-GA4 automatically collects approximate geographic information based on users' IP addresses:
+When you configure Google Analytics 4 within GTM, it automatically collects approximate geographic information based on users' IP addresses:
 - Country
 - Region/State
 - City
 - Coordinates (approximate)
 
-**Note**: This is built into GA4 and requires no additional code. The location data is city-level approximate and respects user privacy.
+**Note**: This is built into Google Analytics and requires no additional code. The location data is city-level approximate and respects user privacy.
 
 ### 2. **Device Information** 💻
 The app tracks detailed device information:
@@ -39,7 +39,7 @@ Custom events track app usage:
 - **Page Views**: Automatic tracking of navigation
 
 ### 4. **Session Data** ⏱️
-GA4 automatically tracks:
+Google Analytics (when configured in GTM) automatically tracks:
 - Session duration
 - Page engagement time
 - Bounce rate
@@ -47,59 +47,63 @@ GA4 automatically tracks:
 
 ## Setup Instructions
 
-### Step 1: Create a Google Analytics 4 Property
+### Step 1: Create a Google Tag Manager Container
 
-1. Go to [Google Analytics](https://analytics.google.com/)
-2. Click "Admin" (gear icon in the bottom left)
-3. Click "Create Property"
-4. Fill in your property details:
-   - Property name: "Kids Learning Challenger" (or your preferred name)
-   - Time zone and currency
-5. Click "Next" and complete the setup wizard
-6. Select "Web" as your platform
-7. Add your website URL (for GitHub Pages: `https://yourusername.github.io/kids-math-challenger/`)
-8. Click "Create stream"
-9. **Copy your Measurement ID** (format: `G-XXXXXXXXXX`)
+1. Go to [Google Tag Manager](https://tagmanager.google.com/)
+2. Click "Create Account" (or use an existing account)
+3. Fill in your account details:
+   - Account name: "Kids Learning Challenger" (or your preferred name)
+   - Country selection
+4. Set up your container:
+   - Container name: "Kids Learning Challenger Web"
+   - Target platform: Select "Web"
+5. Click "Create"
+6. **Copy your Container ID** (format: `GTM-XXXXXXX`) - you'll see this in the GTM code snippet
+7. (Optional but recommended) Set up Google Analytics 4 tag within GTM:
+   - Click "Add a new tag"
+   - Choose "Google Analytics: GA4 Configuration"
+   - Enter your GA4 Measurement ID if you have one
+   - Set trigger to "All Pages"
 
 ### Step 2: Configure Your App
 
 #### For Local Development:
 
 1. Create a `.env.local` file in the root directory (if it doesn't exist)
-2. Add your Measurement ID:
+2. Add your GTM Container ID:
    ```
-   GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+   GTM_CONTAINER_ID=GTM-XXXXXXX
    ```
 
 #### For GitHub Pages Deployment:
 
-Since GitHub Pages serves static files and can't access environment variables at runtime, you need to inject the Measurement ID during the build process:
+Since GitHub Pages serves static files and can't access environment variables at runtime, you need to inject the Container ID during the build process:
 
 **Option A: Using GitHub Secrets (Recommended)**
 
 1. Go to your repository on GitHub
 2. Navigate to Settings → Secrets and variables → Actions
 3. Click "New repository secret"
-4. Name: `GA4_MEASUREMENT_ID`
-5. Value: Your Measurement ID (e.g., `G-XXXXXXXXXX`)
+4. Name: `GTM_CONTAINER_ID`
+5. Value: Your Container ID (e.g., `GTM-XXXXXXX`)
 6. Update your GitHub Actions workflow to inject the variable during build:
 
 ```yaml
 # .github/workflows/deploy.yml
 - name: Build
   env:
-    GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
+    GTM_CONTAINER_ID: ${{ secrets.GTM_CONTAINER_ID }}
   run: npm run build
 ```
 
 **Option B: Hardcode in vite.config.ts**
 
-If you don't mind exposing your Measurement ID (it's public anyway when deployed), you can hardcode it:
+If you don't mind exposing your Container ID (it's public anyway when deployed), you can hardcode it:
 
 ```typescript
 // vite.config.ts
 define: {
-  'process.env.GA4_MEASUREMENT_ID': JSON.stringify('G-XXXXXXXXXX')
+  'process.env.GTM_CONTAINER_ID': JSON.stringify('GTM-XXXXXXX')
 }
 ```
 
@@ -108,14 +112,26 @@ define: {
 1. Build and deploy your app
 2. Visit your deployed site
 3. Open Chrome DevTools → Network tab
-4. Look for requests to `google-analytics.com` or `googletagmanager.com`
-5. Go to GA4 → Reports → Realtime to see live users
+4. Look for requests to `googletagmanager.com/gtm.js`
+5. Go to GTM → Preview mode to see events firing in real-time
+6. If you configured GA4 in GTM, go to GA4 → Reports → Realtime to see live users
 
-Alternatively, use the [Google Analytics Debugger](https://chrome.google.com/webstore/detail/google-analytics-debugger) Chrome extension to see events in real-time.
+Alternatively, use the GTM Preview mode or [Google Tag Assistant](https://tagassistant.google.com/) Chrome extension to see events in real-time.
 
 ## Viewing Your Analytics Data
 
-### In Google Analytics 4:
+### In Google Tag Manager:
+
+1. **Preview Mode**: Test tags before publishing
+   - Click "Preview" in GTM
+   - Enter your website URL
+   - See which tags fire on which pages
+
+2. **Debug Console**: See data layer events
+   - In Preview mode, see all dataLayer pushes
+   - Verify custom events are being sent correctly
+
+### In Google Analytics 4 (if configured in GTM):
 
 1. **Real-time Reports**: See active users right now
    - Navigate to Reports → Realtime

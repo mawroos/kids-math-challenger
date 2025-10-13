@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GA4_MEASUREMENT_ID': JSON.stringify(env.GA4_MEASUREMENT_ID)
+        'process.env.GTM_CONTAINER_ID': JSON.stringify(env.GTM_CONTAINER_ID)
       },
       resolve: {
         alias: {

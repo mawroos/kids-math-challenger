@@ -1,35 +1,35 @@
 # Geolocation and Device Tracking Implementation Summary
 
 ## Overview
-This implementation adds comprehensive analytics tracking to the Kids Learning Challenger app using **Google Analytics 4 (GA4)**, which is perfect for static sites deployed on GitHub Pages.
+This implementation adds comprehensive analytics tracking to the Kids Learning Challenger app using **Google Tag Manager (GTM)**, which is perfect for static sites deployed on GitHub Pages. GTM provides a flexible container for managing multiple tracking services without code changes.
 
 ## What Was Implemented
 
 ### 1. Analytics Utility Module (`utils/analytics.ts`)
 A comprehensive TypeScript module that provides:
-- **GA4 Initialization**: Loads and configures Google Analytics 4
-- **Automatic Geolocation Tracking**: GA4's built-in geographic data collection (country, region, city)
+- **GTM Initialization**: Loads and configures Google Tag Manager container
+- **Automatic Geolocation Tracking**: Via Google Analytics in GTM (country, region, city)
 - **Device Information Tracking**: Captures browser, OS, screen size, viewport, language, platform, and network info
-- **Custom Event Tracking**: Quiz starts, completions, scores, and writing challenges
+- **Custom Event Tracking**: Quiz starts, completions, scores, and writing challenges via dataLayer
 - **Page View Tracking**: For single-page application navigation
 
 ### 2. App Integration (`App.tsx`)
 The main app component now:
-- Initializes analytics on mount using the `GA4_MEASUREMENT_ID` environment variable
+- Initializes analytics on mount using the `GTM_CONTAINER_ID` environment variable
 - Tracks quiz starts and completions with detailed metrics
 - Tracks writing challenge events with school year and scores
-- Automatically captures user interactions
+- Automatically captures user interactions via dataLayer
 
 ### 3. Build Configuration (`vite.config.ts`)
-Updated to support the `GA4_MEASUREMENT_ID` environment variable, making it available to the application at build time.
+Updated to support the `GTM_CONTAINER_ID` environment variable, making it available to the application at build time.
 
 ### 4. GitHub Actions Workflow (`.github/workflows/deploy-pages.yml`)
-Modified to inject the `GA4_MEASUREMENT_ID` from GitHub Secrets during the build process, enabling analytics in production deployments.
+Modified to inject the `GTM_CONTAINER_ID` from GitHub Secrets during the build process, enabling analytics in production deployments.
 
 ### 5. Documentation
 
 #### `README.md`
-- Added setup instructions for Google Analytics 4
+- Added setup instructions for Google Tag Manager
 - Included information about optional analytics tracking
 - Updated environment variables section
 
@@ -37,24 +37,24 @@ Modified to inject the `GA4_MEASUREMENT_ID` from GitHub Secrets during the build
 Comprehensive 8KB+ guide covering:
 - What data is tracked (geolocation, devices, events)
 - Step-by-step setup instructions
-- How to create a GA4 property
+- How to create a GTM container and configure GA4 within it
 - How to configure for GitHub Pages
-- How to view analytics data in GA4
-- Custom events reference
+- How to view analytics data in GTM and GA4
+- Custom events reference via dataLayer
 - Privacy considerations and GDPR compliance
 - Troubleshooting tips
 - Advanced reporting examples
 
 #### `.env.local.example` (New)
-Example environment file showing both required (Gemini API) and optional (GA4) configuration.
+Example environment file showing both required (Gemini API) and optional (GTM) configuration.
 
 ## Key Features
 
 ### Geolocation Tracking 🌍
-- **Automatic**: GA4 collects geographic data based on IP address
+- **Automatic**: Google Analytics (via GTM) collects geographic data based on IP address
 - **Privacy-Friendly**: City-level approximation, no exact locations
-- **No Backend Required**: All handled by GA4's infrastructure
-- **Built-in**: No additional code needed beyond GA4 initialization
+- **No Backend Required**: All handled by GTM and GA4's infrastructure
+- **Built-in**: No additional code needed beyond GTM initialization
 
 ### Device Information 💻
 Tracks comprehensive device details:
@@ -82,17 +82,18 @@ Tracks comprehensive device details:
 ## How It Works
 
 ### For Local Development:
-1. Add `GA4_MEASUREMENT_ID=G-XXXXXXXXXX` to `.env.local`
+1. Add `GTM_CONTAINER_ID=GTM-XXXXXXX` to `.env.local`
 2. Run `npm run dev`
 3. Analytics will be active during development
 
 ### For GitHub Pages Deployment:
-1. Create a GA4 property at https://analytics.google.com/
-2. Get your Measurement ID (G-XXXXXXXXXX)
-3. Add it as a GitHub Secret: `GA4_MEASUREMENT_ID`
-4. Push to main branch
-5. GitHub Actions will build with analytics enabled
-6. View data in real-time at https://analytics.google.com/
+1. Create a GTM container at https://tagmanager.google.com/
+2. (Optional) Configure GA4 tag within GTM
+3. Get your Container ID (GTM-XXXXXXX)
+4. Add it as a GitHub Secret: `GTM_CONTAINER_ID`
+5. Push to main branch
+6. GitHub Actions will build with analytics enabled
+7. View data in real-time at https://tagmanager.google.com/ (Preview mode) or https://analytics.google.com/
 
 ## Privacy & Compliance
 
@@ -104,19 +105,21 @@ Tracks comprehensive device details:
 ## Benefits
 
 1. **No Backend Required**: Perfect for static sites on GitHub Pages
-2. **Free**: GA4 is free for standard usage (10M events/month)
+2. **Free**: GTM and GA4 are free for standard usage (10M events/month)
 3. **Comprehensive**: Geographic, device, and behavioral data
 4. **Real-time**: See users as they interact with your app
-5. **Professional**: Industry-standard analytics platform
-6. **Easy Setup**: Just add one environment variable
+5. **Professional**: Industry-standard tag management platform
+6. **Flexible**: Add/modify tracking tags without code changes
+7. **Easy Setup**: Just add one environment variable
 
 ## Testing
 
 To verify analytics is working:
 1. Build the app: `npm run build`
-2. Check browser DevTools Network tab for requests to `google-analytics.com`
-3. Visit GA4 → Reports → Realtime to see live users
-4. Use the Google Analytics Debugger Chrome extension for detailed debugging
+2. Check browser DevTools Network tab for requests to `googletagmanager.com/gtm.js`
+3. Visit GTM → Preview mode to see events firing in real-time
+4. If GA4 is configured in GTM, visit GA4 → Reports → Realtime to see live users
+5. Use the GTM Preview mode or Tag Assistant Chrome extension for detailed debugging
 
 ## Files Changed
 

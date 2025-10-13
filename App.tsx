@@ -24,11 +24,11 @@ const App: React.FC = () => {
   const [urlSettingsFromLink, setUrlSettingsFromLink] = useState<QuizSettings | null>(null);
   const [existingSessionData, setExistingSessionData] = useState<any>(null);
 
-  // Initialize Google Analytics on mount
+  // Initialize Google Tag Manager on mount
   useEffect(() => {
-    const ga4MeasurementId = process.env.GA4_MEASUREMENT_ID;
-    if (ga4MeasurementId) {
-      analytics.initialize(ga4MeasurementId);
+    const gtmContainerId = process.env.GTM_CONTAINER_ID;
+    if (gtmContainerId) {
+      analytics.initialize(gtmContainerId);
     }
   }, []);
 

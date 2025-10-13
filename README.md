@@ -64,33 +64,34 @@ Session data expires after 24 hours and can be manually cleared using the "Clear
 
 ## Analytics & Tracking
 
-This app supports Google Analytics 4 (GA4) for tracking usage analytics, including:
+This app supports Google Tag Manager (GTM) for tracking usage analytics, including:
 
 ### What's Tracked
-- **Geolocation**: Automatic geographic data collection (country, region, city) via GA4's built-in features
+- **Geolocation**: Automatic geographic data collection (country, region, city) via Google Analytics in GTM
 - **Device Information**: Browser type, operating system, screen resolution, viewport size
 - **User Interactions**: Quiz starts, completions, scores, and time taken
 - **Writing Challenges**: Challenge starts and completion rates with scores
 - **Page Views**: Navigation and screen transitions within the app
 
 ### Privacy & Data
-- All data is collected anonymously through Google Analytics 4
+- All data is collected anonymously through Google Tag Manager
 - No personally identifiable information (PII) is collected
-- Geolocation is approximate (city-level) and provided by GA4 based on IP address
+- Geolocation is approximate (city-level) and provided by Google Analytics based on IP address
 - Users can opt out of tracking by using browser privacy settings or extensions
 
 ### Setting Up Analytics
 To enable analytics tracking for your deployment:
 
-1. Create a Google Analytics 4 property at https://analytics.google.com/
-2. Get your Measurement ID (format: G-XXXXXXXXXX)
-3. Add it to your `.env.local` file:
+1. Create a Google Tag Manager container at https://tagmanager.google.com/
+2. Set up Google Analytics 4 tag within GTM (optional - GTM can manage multiple tracking services)
+3. Get your GTM Container ID (format: GTM-XXXXXXX)
+4. Add it to your `.env.local` file:
    ```
-   GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+   GTM_CONTAINER_ID=GTM-XXXXXXX
    ```
-4. For GitHub Pages deployment, set the `GA4_MEASUREMENT_ID` as a repository secret and configure your build workflow to inject it
+5. For GitHub Pages deployment, set the `GTM_CONTAINER_ID` as a repository secret and configure your build workflow to inject it
 
-**Note**: Analytics tracking is optional. The app works fully without it.
+**Note**: Analytics tracking is optional. The app works fully without it. GTM provides flexibility to add/modify tracking tags without code changes.
 
 ## Run Locally
 
@@ -110,11 +111,11 @@ To enable analytics tracking for your deployment:
      ```
    - Get your free API key from: https://aistudio.google.com/app/apikey
    
-   - (Optional) Add your Google Analytics 4 Measurement ID for tracking:
+   - (Optional) Add your Google Tag Manager Container ID for tracking:
      ```
-     GA4_MEASUREMENT_ID=G-XXXXXXXXXX
+     GTM_CONTAINER_ID=GTM-XXXXXXX
      ```
-   - Get your Measurement ID from: https://analytics.google.com/
+   - Get your Container ID from: https://tagmanager.google.com/
 
 3. Run the app:
    ```bash

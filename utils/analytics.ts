@@ -1,14 +1,8 @@
 /**
- * Google Analytics 4 (GA4) integration for tracking user analytics
- * This provides geolocation tracking (via GA4's built-in features) and device information
+ * Google Tag Manager (GTM) integration for tracking user analytics
+ * This provides geolocation tracking (via GA4 in GTM) and device information
+ * GTM allows managing multiple tracking tags without code changes
  */
-
-interface GtagConfig {
-  page_title?: string;
-  page_location?: string;
-  page_path?: string;
-  send_page_view?: boolean;
-}
 
 interface EventParams {
   [key: string]: string | number | boolean;
@@ -16,72 +10,65 @@ interface EventParams {
 
 declare global {
   interface Window {
-    gtag?: (
-      command: 'config' | 'event' | 'js',
-      targetId: string | Date,
-      config?: GtagConfig | EventParams
-    ) => void;
     dataLayer?: unknown[];
   }
 }
 
 class Analytics {
-  private measurementId: string | null = null;
+  private containerId: string | null = null;
   private initialized = false;
 
   /**
-   * Initialize Google Analytics 4
-   * @param measurementId - Your GA4 Measurement ID (e.g., G-XXXXXXXXXX)
+   * Initialize Google Tag Manager
+   * @param containerId - Your GTM Container ID (e.g., GTM-XXXXXXX)
    */
-  initialize(measurementId: string): void {
+  initialize(containerId: string): void {
     if (this.initialized) {
       console.warn('Analytics already initialized');
       return;
     }
 
-    if (!measurementId || !measurementId.startsWith('G-')) {
-      console.warn('Invalid GA4 Measurement ID. Analytics will not be initialized.');
+    if (!containerId || !containerId.startsWith('GTM-')) {
+      console.warn('Invalid GTM Container ID. Analytics will not be initialized.');
       return;
     }
 
-    this.measurementId = measurementId;
+    this.containerId = containerId;
 
     // Initialize dataLayer
     window.dataLayer = window.dataLayer || [];
-    window.gtag = function gtag(...args: unknown[]) {
-      window.dataLayer!.push(args);
-    };
-
-    // Load the GA4 script
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
-    document.head.appendChild(script);
-
-    // Initialize GA4
-    window.gtag('js', new Date());
-    window.gtag('config', measurementId, {
-      send_page_view: true, // Automatically track page views
+    window.dataLayer.push({
+      'gtm.start': new Date().getTime(),
+      event: 'gtm.js'
     });
 
+    // Load the GTM script
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtm.js?id=${containerId}`;
+    document.head.appendChild(script);
+
     this.initialized = true;
-    console.log('Google Analytics 4 initialized');
+    console.log('Google Tag Manager initialized');
 
     // Track initial device information
     this.trackDeviceInfo();
   }
 
   /**
-   * Track custom events
+   * Track custom events via GTM dataLayer
    * @param eventName - Name of the event
    * @param params - Event parameters
    */
   trackEvent(eventName: string, params?: EventParams): void {
-    if (!this.initialized || !window.gtag) {
+    if (!this.initialized || !window.dataLayer) {
       return;
     }
 
-    window.gtag('event', eventName, params);
+    window.dataLayer.push({
+      event: eventName,
+      ...params
+    });
   }
 
   /**
@@ -90,11 +77,12 @@ class Analytics {
    * @param title - Page title
    */
   trackPageView(path: string, title?: string): void {
-    if (!this.initialized || !window.gtag || !this.measurementId) {
+    if (!this.initialized || !window.dataLayer) {
       return;
     }
 
-    window.gtag('config', this.measurementId, {
+    window.dataLayer.push({
+      event: 'page_view',
       page_path: path,
       page_title: title || document.title,
     });
