@@ -388,7 +388,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={() => loadPreset('https://mawroos.github.io/kids-math-challenger/?q=mV_bM_b_k_b_k_b_b_a_p_bM_p_bM_b_E_bs_u_bC_c_d_h_d_m_e_b_g_c_Y_i_bM_qi_b_bL_j_k_bC_bM_oG')}
+            onClick={() => loadPreset('https://mawroos.github.io/kids-math-challenger/?q=mV_Y_b_k_b_k_b_b_a_p_cfc_p_Gq_b_E_qi_u_id_c_d_h_d_m_e_b_g_c_Y_i_bM_cLs_b_qh_j_k_oG_bM_qi')}
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
           >
             <span className="text-xl">⭐</span>
