@@ -62,6 +62,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     [Operation.FractionDivision]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
     [Operation.GroupingToTarget]: { lowerBound1: 100, upperBound1: 1000, lowerBound2: 1, upperBound2: 99 },
     [Operation.GroupingByTensHundreds]: { lowerBound1: 10, upperBound1: 90, lowerBound2: 100, upperBound2: 900 },
+    [Operation.DecimalAddition]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
+    [Operation.DecimalSubtraction]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
+    [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
+    [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
   });
 
   const handleClearSession = () => {
@@ -97,6 +101,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       case Operation.FractionDivision: return 'Fraction Division';
       case Operation.GroupingToTarget: return 'Grouping to Target';
       case Operation.GroupingByTensHundreds: return 'Grouping by 10s/100s';
+      case Operation.DecimalAddition: return 'Decimal Addition';
+      case Operation.DecimalSubtraction: return 'Decimal Subtraction';
+      case Operation.DecimalRepresentation: return 'Decimals & Fractions';
+      case Operation.FractionToOne: return 'Fractions to 1';
       default: return '';
     }
   };
@@ -245,6 +253,74 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     // Could add a success toast here, but for simplicity we'll just clear any errors
   };
 
+  // Nova's preset: tenths/hundredths as fractions/decimals, add/subtract whole numbers and decimals, multiply/divide 2-3 digit numbers
+  const loadNovaPreset = () => {
+    setCustomMode(true);
+    setSelectedOps([
+      Operation.DecimalRepresentation,  // Tenths/hundredths as fractions and decimals
+      Operation.DecimalAddition,         // Add decimals
+      Operation.DecimalSubtraction,      // Subtract decimals
+      Operation.Addition,                // Add whole numbers
+      Operation.Subtraction,             // Subtract whole numbers
+      Operation.Multiplication,          // Multiply 2-3 digit numbers
+      Operation.Division,                // Divide 2-3 digit numbers
+    ]);
+    setNumQuestions(20);
+    setSoundEnabled(true);
+    
+    // Set appropriate ranges for Nova
+    setOperationRanges({
+      [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
+      [Operation.DecimalAddition]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
+      [Operation.DecimalSubtraction]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
+      [Operation.Addition]: { lowerBound1: 10, upperBound1: 999, lowerBound2: 10, upperBound2: 999 },
+      [Operation.Subtraction]: { lowerBound1: 10, upperBound1: 999, lowerBound2: 10, upperBound2: 999 },
+      [Operation.Multiplication]: { lowerBound1: 10, upperBound1: 999, lowerBound2: 10, upperBound2: 99 },
+      [Operation.Division]: { lowerBound1: 100, upperBound1: 999, lowerBound2: 10, upperBound2: 99 },
+      [Operation.FractionEquivalents]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 12 },
+      [Operation.FractionAddition]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
+      [Operation.FractionMultiplication]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
+      [Operation.FractionDivision]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
+      [Operation.GroupingToTarget]: { lowerBound1: 100, upperBound1: 1000, lowerBound2: 1, upperBound2: 99 },
+      [Operation.GroupingByTensHundreds]: { lowerBound1: 10, upperBound1: 90, lowerBound2: 100, upperBound2: 900 },
+      [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
+    });
+    setError('');
+  };
+
+  // Sam's preset: fraction add/subtract to 1, multiplication/division facts, numbers up to 10,000
+  const loadSamPreset = () => {
+    setCustomMode(true);
+    setSelectedOps([
+      Operation.FractionToOne,           // Add/subtract fractions to make 1 whole
+      Operation.Multiplication,          // Multiplication facts (speed recall)
+      Operation.Division,                // Division facts (speed recall)
+      Operation.Addition,                // Problems up to 10,000
+      Operation.Subtraction,             // Problems up to 10,000
+    ]);
+    setNumQuestions(20);
+    setSoundEnabled(true);
+    
+    // Set appropriate ranges for Sam
+    setOperationRanges({
+      [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
+      [Operation.Multiplication]: { lowerBound1: 2, upperBound1: 12, lowerBound2: 2, upperBound2: 12 },
+      [Operation.Division]: { lowerBound1: 4, upperBound1: 144, lowerBound2: 2, upperBound2: 12 },
+      [Operation.Addition]: { lowerBound1: 100, upperBound1: 10000, lowerBound2: 100, upperBound2: 10000 },
+      [Operation.Subtraction]: { lowerBound1: 100, upperBound1: 10000, lowerBound2: 100, upperBound2: 10000 },
+      [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
+      [Operation.DecimalAddition]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
+      [Operation.DecimalSubtraction]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
+      [Operation.FractionEquivalents]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 12 },
+      [Operation.FractionAddition]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
+      [Operation.FractionMultiplication]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
+      [Operation.FractionDivision]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
+      [Operation.GroupingToTarget]: { lowerBound1: 100, upperBound1: 1000, lowerBound2: 1, upperBound2: 99 },
+      [Operation.GroupingByTensHundreds]: { lowerBound1: 10, upperBound1: 90, lowerBound2: 100, upperBound2: 900 },
+    });
+    setError('');
+  };
+
   const handleStartWritingChallenge = () => {
     if (!onStartWritingChallenge) return;
     
@@ -385,15 +461,27 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
         <p className="text-sm text-slate-400 mb-4 text-center">
           Load pre-configured quiz settings with one click
         </p>
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-4 flex-wrap">
           <button
             type="button"
-            onClick={() => loadPreset('https://mawroos.github.io/kids-math-challenger/?q=mV_Y_b_k_b_k_b_b_a_p_cfc_p_Gq_b_E_qi_u_id_c_d_h_d_m_e_b_g_c_Y_i_bM_cLs_b_qh_j_k_oG_bM_qi')}
+            onClick={loadSamPreset}
+            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+          >
+            <span className="text-xl">🧒</span>
+            <span>Sam</span>
+          </button>
+          <button
+            type="button"
+            onClick={loadNovaPreset}
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
           >
-            <span className="text-xl">⭐</span>
-            <span>Samo Nova</span>
+            <span className="text-xl">👧</span>
+            <span>Nova</span>
           </button>
+        </div>
+        <div className="mt-4 text-xs text-slate-400 text-center">
+          <p><strong>Sam:</strong> Fractions to 1, multiplication/division facts, numbers up to 10,000</p>
+          <p><strong>Nova:</strong> Decimals (tenths/hundredths), add/subtract decimals, multiply/divide 2-3 digit numbers</p>
         </div>
       </div>
       )}
@@ -469,10 +557,14 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
             <OperationButton op={Operation.Subtraction} label="Subtract" icon="-" selected={selectedOps.includes(Operation.Subtraction)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Multiplication} label="Multiply" icon="×" selected={selectedOps.includes(Operation.Multiplication)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.Division} label="Divide" icon="÷" selected={selectedOps.includes(Operation.Division)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.DecimalAddition} label="Dec +" icon="0.1" selected={selectedOps.includes(Operation.DecimalAddition)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.DecimalSubtraction} label="Dec -" icon="0.5" selected={selectedOps.includes(Operation.DecimalSubtraction)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.DecimalRepresentation} label="Dec↔Frac" icon="🔄" selected={selectedOps.includes(Operation.DecimalRepresentation)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.FractionEquivalents} label="Equivalents" icon="½" selected={selectedOps.includes(Operation.FractionEquivalents)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.FractionAddition} label="Frac +" icon="⅓" selected={selectedOps.includes(Operation.FractionAddition)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.FractionMultiplication} label="Frac ×" icon="¼" selected={selectedOps.includes(Operation.FractionMultiplication)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.FractionDivision} label="Frac ÷" icon="⅕" selected={selectedOps.includes(Operation.FractionDivision)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.FractionToOne} label="Frac→1" icon="1️⃣" selected={selectedOps.includes(Operation.FractionToOne)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.GroupingToTarget} label="Grouping" icon="🎯" selected={selectedOps.includes(Operation.GroupingToTarget)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.GroupingByTensHundreds} label="10s/100s" icon="💯" selected={selectedOps.includes(Operation.GroupingByTensHundreds)} onClick={handleOperationToggle} />
           </div>
@@ -527,6 +619,42 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                 <span className="font-semibold text-purple-400">10s/100s grouping:</span> Find missing multiples of 10 or 100 to reach 100 or 1000.
                 <br />
                 <span className="text-slate-400 text-xs">Examples: 20 + ? = 100 (answer: 80), 300 + ? = 1000 (answer: 700)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.DecimalAddition) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-teal-400">Decimal addition:</span> Add decimal numbers with tenths and hundredths.
+                <br />
+                <span className="text-slate-400 text-xs">Example: 0.3 + 0.5 = ? (answer: 0.8)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.DecimalSubtraction) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-teal-400">Decimal subtraction:</span> Subtract decimal numbers with tenths and hundredths.
+                <br />
+                <span className="text-slate-400 text-xs">Example: 0.8 - 0.3 = ? (answer: 0.5)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.DecimalRepresentation) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-yellow-400">Decimals & Fractions:</span> Convert between decimal and fraction notation for tenths/hundredths.
+                <br />
+                <span className="text-slate-400 text-xs">Example: 0.3 = ?/10 (answer: 3)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.FractionToOne) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-rose-400">Fractions to 1:</span> Add or subtract fractions with same denominators to make one whole.
+                <br />
+                <span className="text-slate-400 text-xs">Example: 3/5 + ?/5 = 1 (answer: 2)</span>
               </p>
             </div>
           )}

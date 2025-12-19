@@ -276,6 +276,87 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         }
         break;
       }
+      case Operation.DecimalAddition: {
+        // Decimal addition with tenths and hundredths
+        // Generate random decimal numbers
+        const decimalPlaces = getRandomInt(1, 2); // 1 for tenths, 2 for hundredths
+        const multiplier = decimalPlaces === 1 ? 10 : 100;
+        
+        // Generate numbers in the range and convert to decimals
+        const intNum1 = getRandomInt(currentLowerBound1 * multiplier, currentUpperBound1 * multiplier);
+        const intNum2 = getRandomInt(currentLowerBound2 * multiplier, currentUpperBound2 * multiplier);
+        
+        const decNum1 = intNum1 / multiplier;
+        const decNum2 = intNum2 / multiplier;
+        const sum = Math.round((decNum1 + decNum2) * multiplier) / multiplier;
+        
+        text = `${decNum1.toFixed(decimalPlaces)} + ${decNum2.toFixed(decimalPlaces)} = ?`;
+        correctAnswer = sum;
+        break;
+      }
+      case Operation.DecimalSubtraction: {
+        // Decimal subtraction with tenths and hundredths
+        const decimalPlaces = getRandomInt(1, 2); // 1 for tenths, 2 for hundredths
+        const multiplier = decimalPlaces === 1 ? 10 : 100;
+        
+        // Generate numbers and ensure first is larger
+        let intNum1 = getRandomInt(currentLowerBound1 * multiplier, currentUpperBound1 * multiplier);
+        let intNum2 = getRandomInt(currentLowerBound2 * multiplier, currentUpperBound2 * multiplier);
+        
+        if (intNum1 < intNum2) {
+          [intNum1, intNum2] = [intNum2, intNum1];
+        }
+        
+        const decNum1 = intNum1 / multiplier;
+        const decNum2 = intNum2 / multiplier;
+        const diff = Math.round((decNum1 - decNum2) * multiplier) / multiplier;
+        
+        text = `${decNum1.toFixed(decimalPlaces)} - ${decNum2.toFixed(decimalPlaces)} = ?`;
+        correctAnswer = diff;
+        break;
+      }
+      case Operation.DecimalRepresentation: {
+        // Convert between decimal and fraction representation for tenths and hundredths
+        const isTenths = getRandomInt(0, 1) === 0;
+        const denominator = isTenths ? 10 : 100;
+        const maxNumerator = isTenths ? 9 : 99;
+        
+        const numerator = getRandomInt(1, maxNumerator);
+        const decimalValue = numerator / denominator;
+        
+        // Randomly choose direction: decimal to fraction or fraction to decimal
+        if (getRandomInt(0, 1) === 0) {
+          // Ask for the numerator given the decimal
+          text = `${decimalValue.toFixed(isTenths ? 1 : 2)} = \\frac{?}{${denominator}}`;
+          correctAnswer = numerator;
+        } else {
+          // Ask what the decimal value is (simplified - just ask for numerator again in fraction form)
+          text = `\\frac{${numerator}}{${denominator}} = 0.${isTenths ? numerator : numerator.toString().padStart(2, '0')} \\text{ What is } ${numerator}?`;
+          // Simpler question: show decimal, ask what goes over denominator
+          text = `\\text{What numerator makes } \\frac{?}{${denominator}} = ${decimalValue.toFixed(isTenths ? 1 : 2)}`;
+          correctAnswer = numerator;
+        }
+        break;
+      }
+      case Operation.FractionToOne: {
+        // Add/subtract fractions with same denominators to make 1 whole
+        // e.g., 3/5 + ?/5 = 1
+        const denominator = getRandomInt(Math.max(2, currentLowerBound2), Math.min(12, currentUpperBound2));
+        const knownNumerator = getRandomInt(1, denominator - 1);
+        const missingNumerator = denominator - knownNumerator;
+        
+        // Randomly choose between addition and subtraction format
+        if (getRandomInt(0, 1) === 0) {
+          // Addition format: known + ? = 1
+          text = `\\frac{${knownNumerator}}{${denominator}} + \\frac{?}{${denominator}} = 1`;
+          correctAnswer = missingNumerator;
+        } else {
+          // Subtraction format: 1 - known = ?
+          text = `1 - \\frac{${knownNumerator}}{${denominator}} = \\frac{?}{${denominator}}`;
+          correctAnswer = missingNumerator;
+        }
+        break;
+      }
     }
     
     questions.push({ id: i, text, correctAnswer });

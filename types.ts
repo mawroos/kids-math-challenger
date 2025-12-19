@@ -9,6 +9,10 @@ export enum Operation {
   FractionDivision = 'fraction-division',
   GroupingToTarget = 'grouping-to-target',
   GroupingByTensHundreds = 'grouping-by-tens-hundreds',
+  DecimalAddition = 'decimal-addition',
+  DecimalSubtraction = 'decimal-subtraction',
+  DecimalRepresentation = 'decimal-representation',
+  FractionToOne = 'fraction-to-one',
 }
 
 export interface OperationRanges {
@@ -22,6 +26,10 @@ export interface OperationRanges {
   [Operation.FractionDivision]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.GroupingToTarget]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.GroupingByTensHundreds]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.DecimalAddition]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.DecimalSubtraction]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.DecimalRepresentation]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.FractionToOne]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
 }
 
 export interface QuizSettings {
