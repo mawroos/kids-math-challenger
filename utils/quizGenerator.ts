@@ -330,8 +330,6 @@ export function generateQuestions(settings: QuizSettings): Question[] {
           text = `${decimalValue.toFixed(isTenths ? 1 : 2)} = \\frac{?}{${denominator}}`;
           correctAnswer = numerator;
         } else {
-          // Ask what the decimal value is (simplified - just ask for numerator again in fraction form)
-          text = `\\frac{${numerator}}{${denominator}} = 0.${isTenths ? numerator : numerator.toString().padStart(2, '0')} \\text{ What is } ${numerator}?`;
           // Simpler question: show decimal, ask what goes over denominator
           text = `\\text{What numerator makes } \\frac{?}{${denominator}} = ${decimalValue.toFixed(isTenths ? 1 : 2)}`;
           correctAnswer = numerator;

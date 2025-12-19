@@ -268,8 +268,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     setNumQuestions(20);
     setSoundEnabled(true);
     
-    // Set appropriate ranges for Nova
-    setOperationRanges({
+    // Set appropriate ranges for Nova's selected operations
+    setOperationRanges(prev => ({
+      ...prev,
       [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
       [Operation.DecimalAddition]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
       [Operation.DecimalSubtraction]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
@@ -277,14 +278,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       [Operation.Subtraction]: { lowerBound1: 10, upperBound1: 999, lowerBound2: 10, upperBound2: 999 },
       [Operation.Multiplication]: { lowerBound1: 10, upperBound1: 999, lowerBound2: 10, upperBound2: 99 },
       [Operation.Division]: { lowerBound1: 100, upperBound1: 999, lowerBound2: 10, upperBound2: 99 },
-      [Operation.FractionEquivalents]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 12 },
-      [Operation.FractionAddition]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
-      [Operation.FractionMultiplication]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
-      [Operation.FractionDivision]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
-      [Operation.GroupingToTarget]: { lowerBound1: 100, upperBound1: 1000, lowerBound2: 1, upperBound2: 99 },
-      [Operation.GroupingByTensHundreds]: { lowerBound1: 10, upperBound1: 90, lowerBound2: 100, upperBound2: 900 },
-      [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
-    });
+    }));
     setError('');
   };
 
@@ -301,23 +295,15 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     setNumQuestions(20);
     setSoundEnabled(true);
     
-    // Set appropriate ranges for Sam
-    setOperationRanges({
+    // Set appropriate ranges for Sam's selected operations
+    setOperationRanges(prev => ({
+      ...prev,
       [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
       [Operation.Multiplication]: { lowerBound1: 2, upperBound1: 12, lowerBound2: 2, upperBound2: 12 },
       [Operation.Division]: { lowerBound1: 4, upperBound1: 144, lowerBound2: 2, upperBound2: 12 },
       [Operation.Addition]: { lowerBound1: 100, upperBound1: 10000, lowerBound2: 100, upperBound2: 10000 },
       [Operation.Subtraction]: { lowerBound1: 100, upperBound1: 10000, lowerBound2: 100, upperBound2: 10000 },
-      [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
-      [Operation.DecimalAddition]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
-      [Operation.DecimalSubtraction]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
-      [Operation.FractionEquivalents]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 12 },
-      [Operation.FractionAddition]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
-      [Operation.FractionMultiplication]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
-      [Operation.FractionDivision]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 8 },
-      [Operation.GroupingToTarget]: { lowerBound1: 100, upperBound1: 1000, lowerBound2: 1, upperBound2: 99 },
-      [Operation.GroupingByTensHundreds]: { lowerBound1: 10, upperBound1: 90, lowerBound2: 100, upperBound2: 900 },
-    });
+    }));
     setError('');
   };
 
