@@ -9,7 +9,7 @@ interface PoemAssessment {
 
 export const geminiAPI = {
   generatePoemPrompt: async (schoolYear: number): Promise<string> => {
-    const apiKey = "AIzaSyCJ5eGZ-mfBMLJnGmcksRdX_NxIdW_zMIc";
+    const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey) {
       throw new Error('Gemini API key not configured');
@@ -42,7 +42,7 @@ export const geminiAPI = {
   },
 
   assessPoem: async (poem: string, prompt: string, schoolYear: number): Promise<PoemAssessment> => {
-    const apiKey = "AIzaSyCJ5eGZ-mfBMLJnGmcksRdX_NxIdW_zMIc"
+    const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey) {
       throw new Error('Gemini API key not configured');
