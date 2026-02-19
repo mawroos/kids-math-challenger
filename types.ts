@@ -55,6 +55,7 @@ export interface Question {
     numerator: number;
     denominator: number;
   };
+  correctAnswers?: number[];
 }
 
 export interface QuizResults {

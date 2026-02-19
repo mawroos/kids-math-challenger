@@ -652,7 +652,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
               <p className="text-sm text-slate-300 text-center">
                 <span className="font-semibold text-teal-400">Factors of 12:</span> Find the factors of 12 — the whole numbers that multiply together to make 12.
                 <br />
-                <span className="text-slate-400 text-xs">Factors: 1, 2, 3, 4, 6, 12. Example: 4 × ? = 12 (answer: 3)</span>
+                <span className="text-slate-400 text-xs">Fill in all 6 factors: 1, 2, 3, 4, 6, 12</span>
               </p>
             </div>
           )}

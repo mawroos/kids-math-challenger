@@ -7,7 +7,7 @@ interface QuizSessionData {
   quizSettings: QuizSettings | null;
   writingSettings?: WritingChallengeSettings | null;
   writingResult?: WritingChallengeResult | null;
-  userAnswers?: Record<number, string>;
+  userAnswers?: Record<string, string>;
   time?: number;
   timestamp: number;
 }
@@ -23,7 +23,7 @@ interface CompletedSession {
   questions: Question[];
   quizResults: QuizResults | null;
   isCompleted: boolean;
-  userAnswers?: Record<number, string>;
+  userAnswers?: Record<string, string>;
   appState?: AppState;
 }
 
@@ -80,7 +80,7 @@ export const sessionStorageUtils = {
     }
   },
 
-  updateUserAnswers: (userAnswers: Record<number, string>) => {
+  updateUserAnswers: (userAnswers: Record<string, string>) => {
     try {
       const stored = localStorage.getItem(SESSION_KEY);
       if (stored) {
@@ -148,7 +148,7 @@ export const sessionStorageUtils = {
   saveIncompleteSession: (
     questions: Question[],
     settings: QuizSettings,
-    userAnswers: Record<number, string>,
+    userAnswers: Record<string, string>,
     time: number,
     appState: AppState
   ) => {
@@ -156,7 +156,7 @@ export const sessionStorageUtils = {
       const history = sessionStorageUtils.loadHistory();
       
       // Calculate current progress
-      const answeredCount = Object.keys(userAnswers).filter(key => userAnswers[parseInt(key)] !== '').length;
+      const answeredCount = Object.keys(userAnswers).filter(key => userAnswers[key] !== '').length;
       
       const incompleteSession: CompletedSession = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
