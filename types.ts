@@ -61,17 +61,45 @@ export interface QuizResults {
   time: number;
 }
 
+export type ProblemType = 'word-problem' | 'column-calculation' | 'money-problem' | 'missing-number';
+
+export interface ProblemSolvingQuestion {
+  id: number;
+  questionText: string;
+  difficultyLevel: 1 | 2 | 3;
+  correctAnswer: number;
+  distractorAnswers: [number, number, number];
+  hintText: string;
+  stepByStep: string[];
+  problemType: ProblemType;
+}
+
+export interface ProblemSolvingSettings {
+  numQuestions: number;
+  problemTypes: ProblemType[];
+  soundEnabled?: boolean;
+}
+
+export interface ProblemSolvingResults {
+  score: number;
+  total: number;
+  time: number;
+}
+
 export enum AppState {
     SETUP,
     QUIZ,
     RESULTS,
     WRITING_CHALLENGE,
-    WRITING_RESULTS
+    WRITING_RESULTS,
+    PROBLEM_SOLVING,
+    PROBLEM_SOLVING_RESULTS
 }
 
 export enum ChallengeType {
   MATH = 'math',
-  WRITING = 'writing'
+  WRITING = 'writing',
+  PROBLEM_SOLVING = 'problem-solving'
 }
 
 export interface WritingChallengeSettings {

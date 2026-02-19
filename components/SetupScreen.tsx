@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QuizSettings, Operation, OperationRanges, ChallengeType, WritingChallengeSettings } from '../types';
+import { QuizSettings, Operation, OperationRanges, ChallengeType, WritingChallengeSettings, ProblemSolvingSettings, ProblemType } from '../types';
 import { sessionStorageUtils } from '../utils/sessionStorage';
 import { urlUtils } from '../utils/urlUtils';
 import QRCodeGenerator from './QRCodeGenerator';
@@ -8,6 +8,7 @@ import SessionHistory from './SessionHistory';
 interface SetupScreenProps {
   onStartQuiz: (settings: QuizSettings) => void;
   onStartWritingChallenge?: (settings: WritingChallengeSettings) => void;
+  onStartProblemSolving?: (settings: ProblemSolvingSettings) => void;
   onLoadSession?: (sessionId: string) => void;
 }
 
@@ -34,7 +35,7 @@ const OperationButton: React.FC<{
   );
 };
 
-const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingChallenge, onLoadSession }) => {
+const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingChallenge, onStartProblemSolving, onLoadSession }) => {
   const [challengeType, setChallengeType] = useState<ChallengeType>(ChallengeType.MATH);
   const [schoolYear, setSchoolYear] = useState<number>(3);
   const [lowerBound1, setLowerBound1] = useState<number>(1);
@@ -49,6 +50,13 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
   const [shareableUrl, setShareableUrl] = useState<string>('');
   const [showUrlSection, setShowUrlSection] = useState<boolean>(false);
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  
+  // Problem solving state
+  const [psNumQuestions, setPsNumQuestions] = useState<number>(10);
+  const [psSoundEnabled, setPsSoundEnabled] = useState<boolean>(true);
+  const [selectedProblemTypes, setSelectedProblemTypes] = useState<ProblemType[]>([
+    'word-problem', 'column-calculation', 'money-problem', 'missing-number'
+  ]);
   
   // Initialize operation ranges with default values
   const [operationRanges, setOperationRanges] = useState<Partial<OperationRanges>>({
@@ -317,6 +325,26 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     });
   };
 
+  const handleProblemTypeToggle = (type: ProblemType) => {
+    setSelectedProblemTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  };
+
+  const handleStartProblemSolving = () => {
+    if (!onStartProblemSolving) return;
+    if (selectedProblemTypes.length === 0) {
+      setError('Please select at least one problem type.');
+      return;
+    }
+    setError('');
+    onStartProblemSolving({
+      numQuestions: psNumQuestions,
+      problemTypes: selectedProblemTypes,
+      soundEnabled: psSoundEnabled
+    });
+  };
+
   return (
     <div className="animate-fade-in">
       {showHistory && (
@@ -378,6 +406,20 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
               <span>Writing Challenge</span>
             </div>
           </button>
+          <button
+            type="button"
+            onClick={() => setChallengeType(ChallengeType.PROBLEM_SOLVING)}
+            className={`flex-1 max-w-xs py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
+              challengeType === ChallengeType.PROBLEM_SOLVING
+                ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg scale-105'
+                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-3xl">🧩</span>
+              <span>Problem Solving</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -436,6 +478,110 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
             className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105"
           >
             ✨ Start Writing Challenge
+          </button>
+        </div>
+      )}
+
+      {/* Problem Solving Setup */}
+      {challengeType === ChallengeType.PROBLEM_SOLVING && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-amber-600/20 to-orange-600/20 border-2 border-amber-500/50 rounded-lg p-6">
+            <h3 className="text-xl font-semibold text-amber-300 mb-4">Year 5 Problem Solving</h3>
+            <p className="text-slate-300 mb-6">
+              Practise Addition &amp; Subtraction with word problems, column calculations, money problems, and missing number challenges. Designed for 9–10-year-olds with hints and step-by-step solutions!
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="psNumQuestions" className="block text-sm font-medium text-slate-300 mb-2">
+                  Number of Questions
+                </label>
+                <input
+                  id="psNumQuestions"
+                  type="number"
+                  value={psNumQuestions}
+                  onChange={(e) => setPsNumQuestions(parseInt(e.target.value, 10) || 1)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+                  min="1"
+                  max="50"
+                />
+              </div>
+
+              <div>
+                <h4 className="text-sm font-medium text-slate-300 mb-3">Problem Types</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { type: 'word-problem' as ProblemType, label: 'Word Problems', icon: '📝' },
+                    { type: 'column-calculation' as ProblemType, label: 'Column Calculations', icon: '🔢' },
+                    { type: 'money-problem' as ProblemType, label: 'Money Problems', icon: '💷' },
+                    { type: 'missing-number' as ProblemType, label: 'Missing Numbers', icon: '❓' },
+                  ]).map(({ type, label, icon }) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => handleProblemTypeToggle(type)}
+                      className={`flex flex-col items-center justify-center p-3 border-2 rounded-lg transition-all duration-200 ${
+                        selectedProblemTypes.includes(type)
+                          ? 'bg-amber-500 border-amber-400 text-white shadow-lg scale-105'
+                          : 'bg-slate-700 border-slate-600 hover:bg-slate-600 hover:border-slate-500'
+                      }`}
+                    >
+                      <span className="text-2xl">{icon}</span>
+                      <span className="mt-1 text-sm font-semibold">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center space-x-3 py-2">
+                <label htmlFor="psSoundToggle" className="text-sm font-medium text-slate-400">
+                  Sound Effects
+                </label>
+                <button
+                  type="button"
+                  id="psSoundToggle"
+                  onClick={() => setPsSoundEnabled(!psSoundEnabled)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                    psSoundEnabled ? 'bg-amber-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      psSoundEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                <span className="text-sm text-slate-500">
+                  {psSoundEnabled ? 'On' : 'Off'}
+                </span>
+              </div>
+
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                <h4 className="text-amber-300 font-semibold mb-2">🧩 What to Expect:</h4>
+                <ul className="text-slate-300 text-sm space-y-1 list-disc list-inside">
+                  <li>Multiple choice questions with 4 answer options</li>
+                  <li>Hints when you get an answer wrong</li>
+                  <li>Step-by-step solution breakdowns</li>
+                  <li>Numbers in the Year 5 range (1,000 to 100,000)</li>
+                  <li>Three difficulty levels: Easy, Medium, Hard</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="bg-red-500/20 border border-red-500 rounded-lg p-4">
+              <p className="text-red-300">{error}</p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleStartProblemSolving}
+            className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105"
+          >
+            🧩 Start Problem Solving
           </button>
         </div>
       )}
