@@ -198,7 +198,14 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                     const boxValue = userAnswers[key] || '';
                                     const boxNum = parseInt(boxValue, 10);
                                     const boxAnswered = boxValue !== '';
-                                    const isDuplicate = boxAnswered && !isNaN(boxNum) && enteredValues.indexOf(boxNum) !== enteredValues.lastIndexOf(boxNum) && enteredValues.indexOf(boxNum) < idx;
+                                    // Check if a previous box already has the same value
+                                    let isDuplicate = false;
+                                    if (boxAnswered && !isNaN(boxNum)) {
+                                        for (let j = 0; j < idx; j++) {
+                                            const prevVal = parseInt(userAnswers[`${q.id}_${j}`] || '', 10);
+                                            if (prevVal === boxNum) { isDuplicate = true; break; }
+                                        }
+                                    }
                                     const boxCorrect = boxAnswered && !isNaN(boxNum) && q.correctAnswers!.includes(boxNum) && !isDuplicate;
 
                                     return (
