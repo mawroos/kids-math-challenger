@@ -1,12 +1,15 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { QuizSettings, Question, QuizResults, AppState, WritingChallengeSettings, WritingChallengeResult } from './types';
+import { QuizSettings, Question, QuizResults, AppState, WritingChallengeSettings, WritingChallengeResult, ProblemSolvingSettings, ProblemSolvingQuestion, ProblemSolvingResults } from './types';
 import SetupScreen from './components/SetupScreen';
 import QuizScreen from './components/QuizScreen';
 import ResultsScreen from './components/ResultsScreen';
 import WritingChallengeScreen from './components/WritingChallengeScreen';
 import WritingResultsScreen from './components/WritingResultsScreen';
+import ProblemSolvingScreen from './components/ProblemSolvingScreen';
+import ProblemSolvingResultsScreen from './components/ProblemSolvingResultsScreen';
 import { generateQuestions } from './utils/quizGenerator';
+import { generateProblemSolvingQuestions } from './utils/problemSolvingGenerator';
 import { sessionStorageUtils } from './utils/sessionStorage';
 import { urlUtils } from './utils/urlUtils';
 import { analytics } from './utils/analytics';
@@ -18,6 +21,9 @@ const App: React.FC = () => {
   const [quizSettings, setQuizSettings] = useState<QuizSettings | null>(null);
   const [writingSettings, setWritingSettings] = useState<WritingChallengeSettings | null>(null);
   const [writingResult, setWritingResult] = useState<WritingChallengeResult | null>(null);
+  const [problemSolvingSettings, setProblemSolvingSettings] = useState<ProblemSolvingSettings | null>(null);
+  const [problemSolvingQuestions, setProblemSolvingQuestions] = useState<ProblemSolvingQuestion[]>([]);
+  const [problemSolvingResults, setProblemSolvingResults] = useState<ProblemSolvingResults | null>(null);
   const [sessionRestored, setSessionRestored] = useState<boolean>(false);
   const [isFromUrl, setIsFromUrl] = useState<boolean>(false);
   const [showSessionConflict, setShowSessionConflict] = useState<boolean>(false);
@@ -178,6 +184,9 @@ const App: React.FC = () => {
     setQuizSettings(null);
     setWritingSettings(null);
     setWritingResult(null);
+    setProblemSolvingSettings(null);
+    setProblemSolvingQuestions([]);
+    setProblemSolvingResults(null);
     setAppState(AppState.SETUP);
     sessionStorageUtils.clearSession();
   }, []);
@@ -203,6 +212,28 @@ const App: React.FC = () => {
   const handleCancelWritingChallenge = useCallback(() => {
     setWritingSettings(null);
     setWritingResult(null);
+    setAppState(AppState.SETUP);
+  }, []);
+
+  const handleStartProblemSolving = useCallback((settings: ProblemSolvingSettings) => {
+    setProblemSolvingSettings(settings);
+    setProblemSolvingQuestions(generateProblemSolvingQuestions(settings));
+    setAppState(AppState.PROBLEM_SOLVING);
+    
+    analytics.trackQuizStart('problem-solving', settings.numQuestions);
+  }, []);
+
+  const handleFinishProblemSolving = useCallback((results: ProblemSolvingResults) => {
+    setProblemSolvingResults(results);
+    setAppState(AppState.PROBLEM_SOLVING_RESULTS);
+    
+    analytics.trackQuizComplete('problem-solving', results.score, results.total, results.time);
+  }, []);
+
+  const handleCancelProblemSolving = useCallback(() => {
+    setProblemSolvingSettings(null);
+    setProblemSolvingQuestions([]);
+    setProblemSolvingResults(null);
     setAppState(AppState.SETUP);
   }, []);
 
@@ -248,9 +279,15 @@ const App: React.FC = () => {
         ) : null;
       case AppState.WRITING_RESULTS:
         return <WritingResultsScreen result={writingResult!} onRestart={handleRestart} />;
+      case AppState.PROBLEM_SOLVING:
+        return problemSolvingQuestions.length > 0 ? (
+          <ProblemSolvingScreen questions={problemSolvingQuestions} onFinish={handleFinishProblemSolving} onCancel={handleCancelProblemSolving} soundEnabled={problemSolvingSettings?.soundEnabled ?? true} />
+        ) : null;
+      case AppState.PROBLEM_SOLVING_RESULTS:
+        return <ProblemSolvingResultsScreen results={problemSolvingResults!} onRestart={handleRestart} soundEnabled={problemSolvingSettings?.soundEnabled ?? true} />;
       case AppState.SETUP:
       default:
-        return <SetupScreen onStartQuiz={handleStartQuiz} onStartWritingChallenge={handleStartWritingChallenge} onLoadSession={handleLoadSession} />;
+        return <SetupScreen onStartQuiz={handleStartQuiz} onStartWritingChallenge={handleStartWritingChallenge} onStartProblemSolving={handleStartProblemSolving} onLoadSession={handleLoadSession} />;
     }
   };
 
