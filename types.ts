@@ -13,6 +13,7 @@ export enum Operation {
   DecimalSubtraction = 'decimal-subtraction',
   DecimalRepresentation = 'decimal-representation',
   FractionToOne = 'fraction-to-one',
+  FactorsOf12 = 'factors-of-12',
 }
 
 export interface OperationRanges {
@@ -30,6 +31,7 @@ export interface OperationRanges {
   [Operation.DecimalSubtraction]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.DecimalRepresentation]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.FractionToOne]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.FactorsOf12]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
 }
 
 export interface QuizSettings {

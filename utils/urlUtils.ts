@@ -15,7 +15,8 @@ const OPERATION_BITS = {
   [Operation.FractionMultiplication]: 6,
   [Operation.FractionDivision]: 7,
   [Operation.GroupingToTarget]: 8,
-  [Operation.GroupingByTensHundreds]: 9
+  [Operation.GroupingByTensHundreds]: 9,
+  [Operation.FactorsOf12]: 10
 };
 
 const BITS_TO_OPERATION = Object.fromEntries(

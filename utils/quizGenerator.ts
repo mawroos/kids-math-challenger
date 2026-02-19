@@ -355,6 +355,30 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         }
         break;
       }
+      case Operation.FactorsOf12: {
+        // Test knowledge of factors of 12: 1, 2, 3, 4, 6, 12
+        const factorsOf12 = [1, 2, 3, 4, 6, 12];
+        const factorIndex = getRandomInt(0, factorsOf12.length - 1);
+        const factor = factorsOf12[factorIndex];
+        const pair = 12 / factor;
+        
+        // Randomly choose question format
+        const format = getRandomInt(0, 2);
+        if (format === 0) {
+          // Multiplication format: factor × ? = 12
+          text = `${factor} × ? = 12`;
+          correctAnswer = pair;
+        } else if (format === 1) {
+          // Division format: 12 ÷ factor = ?
+          text = `12 ÷ ${factor} = ?`;
+          correctAnswer = pair;
+        } else {
+          // Missing factor format: ? × pair = 12
+          text = `? × ${pair} = 12`;
+          correctAnswer = factor;
+        }
+        break;
+      }
     }
     
     questions.push({ id: i, text, correctAnswer });
