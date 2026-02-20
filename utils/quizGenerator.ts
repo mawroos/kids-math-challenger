@@ -355,9 +355,19 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         }
         break;
       }
+      case Operation.FactorsOf12: {
+        // Show the number 12 and ask user to fill in all its factors
+        text = 'Find all factors of 12';
+        correctAnswer = 0;
+        break;
+      }
     }
     
-    questions.push({ id: i, text, correctAnswer });
+    const question: Question = { id: i, text, correctAnswer };
+    if (operation === Operation.FactorsOf12) {
+      question.correctAnswers = [1, 2, 3, 4, 6, 12];
+    }
+    questions.push(question);
   }
 
   return questions;
