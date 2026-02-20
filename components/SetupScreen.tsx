@@ -114,7 +114,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       case Operation.DecimalSubtraction: return 'Decimal Subtraction';
       case Operation.DecimalRepresentation: return 'Decimals & Fractions';
       case Operation.FractionToOne: return 'Fractions to 1';
-      case Operation.FactorsOf12: return 'Factors of 12';
+      case Operation.FactorsOf12: return 'Find Factors';
       default: return '';
     }
   };
@@ -701,7 +701,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
             <OperationButton op={Operation.FractionToOne} label="Frac→1" icon="1️⃣" selected={selectedOps.includes(Operation.FractionToOne)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.GroupingToTarget} label="Grouping" icon="🎯" selected={selectedOps.includes(Operation.GroupingToTarget)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.GroupingByTensHundreds} label="10s/100s" icon="💯" selected={selectedOps.includes(Operation.GroupingByTensHundreds)} onClick={handleOperationToggle} />
-            <OperationButton op={Operation.FactorsOf12} label="Factors 12" icon="🔢" selected={selectedOps.includes(Operation.FactorsOf12)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.FactorsOf12} label="Factors" icon="🔢" selected={selectedOps.includes(Operation.FactorsOf12)} onClick={handleOperationToggle} />
           </div>
           {selectedOps.includes(Operation.FractionEquivalents) && (
             <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
@@ -796,9 +796,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
           {selectedOps.includes(Operation.FactorsOf12) && (
             <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
               <p className="text-sm text-slate-300 text-center">
-                <span className="font-semibold text-teal-400">Factors of 12:</span> Find the factors of 12 — the whole numbers that multiply together to make 12.
+                <span className="font-semibold text-teal-400">Find Factors:</span> A random number will be chosen from the range you set. Find all the whole numbers that multiply together to make it.
                 <br />
-                <span className="text-slate-400 text-xs">Fill in all 6 factors: 1, 2, 3, 4, 6, 12</span>
+                <span className="text-slate-400 text-xs">The number of answer boxes will match the number of factors for the chosen number.</span>
               </p>
             </div>
           )}
@@ -852,7 +852,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.GroupingToTarget ? 'Target Value (Lower)' : 
-                         op === Operation.GroupingByTensHundreds ? 'For 100 (10s Lower)' : 'First Number (Lower)'}
+                         op === Operation.GroupingByTensHundreds ? 'For 100 (10s Lower)' :
+                         op === Operation.FactorsOf12 ? 'Number Range (From)' : 'First Number (Lower)'}
                       </label>
                       <input
                         type="number"
@@ -865,7 +866,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.GroupingToTarget ? 'Target Value (Upper)' : 
-                         op === Operation.GroupingByTensHundreds ? 'For 100 (10s Upper)' : 'First Number (Upper)'}
+                         op === Operation.GroupingByTensHundreds ? 'For 100 (10s Upper)' :
+                         op === Operation.FactorsOf12 ? 'Number Range (To)' : 'First Number (Upper)'}
                       </label>
                       <input
                         type="number"

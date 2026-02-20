@@ -69,6 +69,7 @@ export function generateQuestions(settings: QuizSettings): Question[] {
 
     let num1 = getRandomInt(currentLowerBound1, currentUpperBound1);
     let num2 = getRandomInt(currentLowerBound2, currentUpperBound2);
+    let factorsTarget = 0;
 
     switch (operation) {
       case Operation.Addition:
@@ -356,8 +357,9 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         break;
       }
       case Operation.FactorsOf12: {
-        // Show the number 12 and ask user to fill in all its factors
-        text = 'Find all factors of 12';
+        // Pick a random number from the configured range and ask for all its factors
+        factorsTarget = Math.max(1, num1);
+        text = `Find all factors of ${factorsTarget}`;
         correctAnswer = 0;
         break;
       }
@@ -365,7 +367,7 @@ export function generateQuestions(settings: QuizSettings): Question[] {
     
     const question: Question = { id: i, text, correctAnswer };
     if (operation === Operation.FactorsOf12) {
-      question.correctAnswers = [1, 2, 3, 4, 6, 12];
+      question.correctAnswers = getFactors(factorsTarget).sort((a, b) => a - b);
     }
     questions.push(question);
   }
