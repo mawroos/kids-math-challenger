@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Question, QuizResults } from '../types';
 import CheckIcon from './icons/CheckIcon';
 import XIcon from './icons/XIcon';
@@ -33,6 +33,24 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
   // Fix: Replaced NodeJS.Timeout with ReturnType<typeof setInterval> for browser compatibility.
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [psShowHint, setPsShowHint] = useState<Record<number, boolean>>({});
+  const [psShowSteps, setPsShowSteps] = useState<Record<number, boolean>>({});
+
+  // Pre-shuffle multiple-choice options for problem-solving questions (stable across re-renders)
+  const psShuffledOptions = useMemo(() => {
+    const map: Record<number, number[]> = {};
+    questions.forEach(q => {
+      if (q.isProblemSolving && q.distractorAnswers) {
+        const opts = [q.correctAnswer, ...q.distractorAnswers];
+        for (let i = opts.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [opts[i], opts[j]] = [opts[j], opts[i]];
+        }
+        map[q.id] = opts;
+      }
+    });
+    return map;
+  }, [questions]);
 
   // Load saved user answers and time from session storage
   useEffect(() => {
@@ -123,6 +141,11 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
           soundEffects.playIncorrectSound();
         }
       }
+
+      // Show hint for problem-solving questions answered incorrectly
+      if (question.isProblemSolving && !isCorrect) {
+        setPsShowHint(prev => ({ ...prev, [question.id]: true }));
+      }
     }
   };
 
@@ -201,6 +224,133 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {questions.map((q, index) => {
+                if (q.isProblemSolving) {
+                    // Problem-solving question (multiple choice)
+                    const answerKey = q.id.toString();
+                    const userAnswerStr = userAnswers[answerKey];
+                    const isAnswered = userAnswerStr !== undefined && userAnswerStr !== '';
+                    const userAnswerNum = isAnswered ? parseFloat(userAnswerStr) : NaN;
+                    const isCorrect = isAnswered && userAnswerNum === q.correctAnswer;
+                    const options = psShuffledOptions[q.id] || [q.correctAnswer, ...(q.distractorAnswers || [])];
+
+                    const difficultyLabels: Record<number, { label: string; color: string }> = {
+                      1: { label: 'Easy', color: 'text-green-400 bg-green-400/10 border-green-400/30' },
+                      2: { label: 'Medium', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' },
+                      3: { label: 'Hard', color: 'text-red-400 bg-red-400/10 border-red-400/30' },
+                    };
+                    const problemTypeLabels: Record<string, { label: string; icon: string }> = {
+                      'word-problem': { label: 'Word Problem', icon: '📝' },
+                      'column-calculation': { label: 'Column Calculation', icon: '🔢' },
+                      'money-problem': { label: 'Money Problem', icon: '💷' },
+                      'missing-number': { label: 'Missing Number', icon: '❓' },
+                    };
+                    const diffInfo = q.difficultyLevel ? difficultyLabels[q.difficultyLevel] : null;
+                    const typeInfo = q.problemType ? problemTypeLabels[q.problemType] : null;
+
+                    const formatPsAnswer = (val: number): string => {
+                      if (q.problemType === 'money-problem') return `£${val.toFixed(2)}`;
+                      return val.toLocaleString();
+                    };
+
+                    let borderColor = 'border-slate-700';
+                    if (isAnswered) {
+                        borderColor = isCorrect ? 'border-green-500' : 'border-red-500';
+                    }
+
+                    return (
+                        <div key={q.id} className={`bg-slate-800/80 p-5 rounded-lg border-2 ${borderColor} transition-colors duration-300 shadow-lg md:col-span-2`}>
+                            {/* Tags */}
+                            <div className="flex gap-2 mb-3">
+                              {diffInfo && (
+                                <span className={`text-xs px-2 py-1 rounded-full border ${diffInfo.color}`}>
+                                  {diffInfo.label}
+                                </span>
+                              )}
+                              {typeInfo && (
+                                <span className="text-xs px-2 py-1 rounded-full border text-sky-400 bg-sky-400/10 border-sky-400/30">
+                                  {typeInfo.icon} {typeInfo.label}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Question text */}
+                            <p className="text-xl font-semibold text-slate-100 mb-4 leading-relaxed">{q.text}</p>
+
+                            {/* Multiple choice options */}
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                              {options.map((option, idx) => {
+                                let btnClass = 'bg-slate-700 border-slate-500 text-slate-100';
+                                if (isAnswered) {
+                                  if (option === q.correctAnswer) {
+                                    btnClass = 'bg-green-600/30 border-green-500 text-green-300';
+                                  } else if (option === userAnswerNum && !isCorrect) {
+                                    btnClass = 'bg-red-600/30 border-red-500 text-red-300';
+                                  } else {
+                                    btnClass = 'bg-slate-800 border-slate-700 text-slate-500';
+                                  }
+                                } else {
+                                  btnClass += ' hover:bg-slate-600 hover:border-sky-400 cursor-pointer';
+                                }
+                                return (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                      if (!isAnswered) {
+                                        handleAnswerChange(answerKey, option.toString(), q);
+                                      }
+                                    }}
+                                    disabled={isAnswered}
+                                    className={`p-3 rounded-lg border-2 font-semibold text-base transition-all duration-200 ${btnClass} ${isAnswered ? 'cursor-default' : ''}`}
+                                  >
+                                    {formatPsAnswer(option)}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Feedback: hint & step-by-step */}
+                            {isAnswered && (
+                              <div className="space-y-2 mt-3">
+                                {!isCorrect && (
+                                  <p className="text-sm text-red-300">
+                                    The correct answer is <strong>{formatPsAnswer(q.correctAnswer)}</strong>
+                                  </p>
+                                )}
+                                {psShowHint[q.id] && q.hintText && !isCorrect && (
+                                  <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 text-sm">
+                                    <span className="font-semibold">💡 Hint: </span>{q.hintText}
+                                  </div>
+                                )}
+                                {q.stepByStep && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => setPsShowSteps(prev => ({ ...prev, [q.id]: !prev[q.id] }))}
+                                      className="text-sky-400 hover:text-sky-300 text-sm font-medium transition-colors"
+                                    >
+                                      {psShowSteps[q.id] ? '▼ Hide Step-by-Step' : '▶ Show Step-by-Step Solution'}
+                                    </button>
+                                    {psShowSteps[q.id] && (
+                                      <div className="p-3 rounded-lg bg-sky-500/10 border border-sky-500/30">
+                                        <ol className="space-y-1">
+                                          {q.stepByStep.map((step, sIdx) => (
+                                            <li key={sIdx} className="text-slate-300 text-sm flex gap-2">
+                                              <span className="text-sky-400 font-mono text-xs mt-0.5">{sIdx + 1}.</span>
+                                              <span>{step}</span>
+                                            </li>
+                                          ))}
+                                        </ol>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
+                        </div>
+                    );
+                }
+
                 if (q.correctAnswers) {
                     // Multi-answer question (e.g., Factors of 12 or Expanded Notation)
                     const hasLabels = q.answerLabels && q.answerLabels.length === q.correctAnswers.length;

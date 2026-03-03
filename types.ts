@@ -63,6 +63,13 @@ export interface Question {
   };
   correctAnswers?: number[];
   answerLabels?: string[];
+  // Problem-solving fields (when question originates from problem-solving generator)
+  isProblemSolving?: boolean;
+  distractorAnswers?: [number, number, number];
+  hintText?: string;
+  stepByStep?: string[];
+  problemType?: ProblemType;
+  difficultyLevel?: 1 | 2 | 3;
 }
 
 export interface QuizResults {

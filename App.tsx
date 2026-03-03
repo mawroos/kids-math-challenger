@@ -9,7 +9,7 @@ import WritingResultsScreen from './components/WritingResultsScreen';
 import ProblemSolvingScreen from './components/ProblemSolvingScreen';
 import ProblemSolvingResultsScreen from './components/ProblemSolvingResultsScreen';
 import FocusGuard from './components/FocusGuard';
-import { generateQuestions } from './utils/quizGenerator';
+import { generateQuestions, convertProblemSolvingToQuestions } from './utils/quizGenerator';
 import { generateProblemSolvingQuestions } from './utils/problemSolvingGenerator';
 import { sessionStorageUtils } from './utils/sessionStorage';
 import { urlUtils } from './utils/urlUtils';
@@ -83,7 +83,12 @@ const App: React.FC = () => {
   const startQuizFromUrl = (urlSettings: QuizSettings) => {
     setQuizSettings(urlSettings);
     
-    // Generate problem solving questions if problem types are present in URL settings
+    let mathQuestions: Question[] = [];
+    if (urlSettings.operations.length > 0) {
+      mathQuestions = generateQuestions(urlSettings);
+    }
+
+    // Generate problem solving questions and merge into the main quiz
     if (urlSettings.problemTypes && urlSettings.problemTypes.length > 0) {
       const psSettings: ProblemSolvingSettings = {
         numQuestions: urlSettings.psNumQuestions || 10,
@@ -91,23 +96,17 @@ const App: React.FC = () => {
         soundEnabled: urlSettings.soundEnabled,
       };
       setProblemSolvingSettings(psSettings);
-      setProblemSolvingQuestions(generateProblemSolvingQuestions(psSettings));
+      const psRaw = generateProblemSolvingQuestions(psSettings);
+      const psConverted = convertProblemSolvingToQuestions(psRaw, mathQuestions.length);
+      mathQuestions = [...mathQuestions, ...psConverted];
     } else {
       setProblemSolvingSettings(null);
       setProblemSolvingQuestions([]);
       setProblemSolvingResults(null);
     }
-    
-    // If math operations are selected, start with math quiz; otherwise go to problem solving
-    if (urlSettings.operations.length > 0) {
-      setQuestions(generateQuestions(urlSettings));
-      setAppState(AppState.QUIZ);
-    } else if (urlSettings.problemTypes && urlSettings.problemTypes.length > 0) {
-      setAppState(AppState.PROBLEM_SOLVING);
-    } else {
-      setQuestions(generateQuestions(urlSettings));
-      setAppState(AppState.QUIZ);
-    }
+
+    setQuestions(mathQuestions);
+    setAppState(AppState.QUIZ);
     
     setSessionRestored(true);
     setIsFromUrl(true);
@@ -164,7 +163,12 @@ const App: React.FC = () => {
   const handleStartQuiz = useCallback((settings: QuizSettings) => {
     setQuizSettings(settings);
     
-    // Generate problem solving questions if problem types are selected
+    let mathQuestions: Question[] = [];
+    if (settings.operations.length > 0) {
+      mathQuestions = generateQuestions(settings);
+    }
+
+    // Generate problem solving questions and merge into the main quiz
     if (settings.problemTypes && settings.problemTypes.length > 0) {
       const psSettings: ProblemSolvingSettings = {
         numQuestions: settings.psNumQuestions || 10,
@@ -172,7 +176,9 @@ const App: React.FC = () => {
         soundEnabled: settings.soundEnabled,
       };
       setProblemSolvingSettings(psSettings);
-      setProblemSolvingQuestions(generateProblemSolvingQuestions(psSettings));
+      const psRaw = generateProblemSolvingQuestions(psSettings);
+      const psConverted = convertProblemSolvingToQuestions(psRaw, mathQuestions.length);
+      mathQuestions = [...mathQuestions, ...psConverted];
     } else {
       // Clear any stale problem-solving state from a previous run
       setProblemSolvingSettings(null);
@@ -180,16 +186,9 @@ const App: React.FC = () => {
       setProblemSolvingResults(null);
     }
     
-    // If math operations are selected, start with the math quiz
-    if (settings.operations.length > 0) {
-      setQuestions(generateQuestions(settings));
-      setAppState(AppState.QUIZ);
-      analytics.trackQuizStart('math', settings.numQuestions);
-    } else {
-      // Only problem solving selected, go straight to problem solving
-      setAppState(AppState.PROBLEM_SOLVING);
-      analytics.trackQuizStart('problem-solving', settings.psNumQuestions || 10);
-    }
+    setQuestions(mathQuestions);
+    setAppState(AppState.QUIZ);
+    analytics.trackQuizStart('math', mathQuestions.length);
   }, []);
 
   const handleFinishQuiz = useCallback((results: QuizResults) => {
@@ -203,14 +202,8 @@ const App: React.FC = () => {
       sessionStorageUtils.saveCompletedSession(questions, results, quizSettings);
     }
     
-    // If there are problem solving questions, transition to problem solving next
-    if (problemSolvingQuestions.length > 0) {
-      setAppState(AppState.PROBLEM_SOLVING);
-      analytics.trackQuizStart('problem-solving', problemSolvingQuestions.length);
-    } else {
-      setAppState(AppState.RESULTS);
-    }
-  }, [questions, quizSettings, problemSolvingQuestions]);
+    setAppState(AppState.RESULTS);
+  }, [questions, quizSettings]);
 
   const handleCancelQuiz = useCallback(() => {
     // Save incomplete session to history before clearing

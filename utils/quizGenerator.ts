@@ -1,4 +1,4 @@
-import { Question, QuizSettings, Operation } from '../types';
+import { Question, QuizSettings, Operation, ProblemSolvingQuestion } from '../types';
 
 function getRandomInt(min: number, max: number): number {
   min = Math.ceil(min);
@@ -480,4 +480,26 @@ export function generateQuestions(settings: QuizSettings): Question[] {
   }
 
   return questions;
+}
+
+/**
+ * Converts ProblemSolvingQuestion objects to Question objects so they can be
+ * mixed into the main quiz.  IDs are offset by `idOffset` to avoid collisions
+ * with the math questions already in the array.
+ */
+export function convertProblemSolvingToQuestions(
+  psQuestions: ProblemSolvingQuestion[],
+  idOffset: number
+): Question[] {
+  return psQuestions.map((ps, idx) => ({
+    id: idOffset + idx,
+    text: ps.questionText,
+    correctAnswer: ps.correctAnswer,
+    isProblemSolving: true,
+    distractorAnswers: ps.distractorAnswers,
+    hintText: ps.hintText,
+    stepByStep: ps.stepByStep,
+    problemType: ps.problemType,
+    difficultyLevel: ps.difficultyLevel,
+  }));
 }
