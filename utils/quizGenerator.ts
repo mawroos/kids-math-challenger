@@ -440,8 +440,9 @@ export function generateQuestions(settings: QuizSettings): Question[] {
           3: 'thousand',
           4: 'ten thousand',
           5: 'hundred thousand',
+          6: 'million',
         };
-        const placeName = placeNames[roundingPower] || roundingValue.toLocaleString();
+        const placeName = placeNames[roundingPower] || `nearest ${roundingValue.toLocaleString()}`;
         
         text = `Round ${number.toLocaleString()} to the nearest ${placeName}`;
         correctAnswer = rounded;

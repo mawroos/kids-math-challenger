@@ -830,7 +830,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                          op === Operation.GroupingToTarget ? 'Known Number (Lower)' :
                          op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Lower)' :
                          op === Operation.ExpandedNotation ? 'Decimal Places (0-2)' :
-                         op === Operation.RoundingNumbers ? 'Min Place (1=ten, 2=hundred...)' : 'Second Number (Lower)'}
+                         op === Operation.RoundingNumbers ? 'Min Place (1=ten, 2=hundred, 3=thousand)' : 'Second Number (Lower)'}
                       </label>
                       <input
                         type="number"
@@ -846,7 +846,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                          op === Operation.GroupingToTarget ? 'Known Number (Upper)' :
                          op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Upper)' :
                          op === Operation.ExpandedNotation ? '(unused)' :
-                         op === Operation.RoundingNumbers ? 'Max Place (3=thousand...)' : 'Second Number (Upper)'}
+                         op === Operation.RoundingNumbers ? 'Max Place (4=ten thousand, 5=hundred thousand)' : 'Second Number (Upper)'}
                       </label>
                       <input
                         type="number"
