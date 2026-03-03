@@ -89,6 +89,8 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ onLoadSession, onClose 
       [Operation.DecimalRepresentation]: 'Dec↔Frac',
       [Operation.FractionToOne]: 'Frac→1',
       [Operation.FactorsOf12]: 'Factors 12',
+      [Operation.ExpandedNotation]: 'Expanded',
+      [Operation.RoundingNumbers]: 'Rounding',
     };
     return labels[op] || op;
   };

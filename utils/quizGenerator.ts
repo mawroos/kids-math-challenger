@@ -61,15 +61,31 @@ export function generateQuestions(settings: QuizSettings): Question[] {
       currentLowerBound2 = ranges.lowerBound2;
       currentUpperBound2 = ranges.upperBound2;
     } else {
-      currentLowerBound1 = lowerBound1;
-      currentUpperBound1 = upperBound1;
-      currentLowerBound2 = lowerBound2;
-      currentUpperBound2 = upperBound2;
+      // Operations with specialised defaults that don't work with generic bounds
+      const operationDefaults: Partial<Record<Operation, { lb1: number; ub1: number; lb2: number; ub2: number }>> = {
+        [Operation.ExpandedNotation]: { lb1: 100, ub1: 99999, lb2: 0, ub2: 0 },
+        [Operation.RoundingNumbers]: { lb1: 10, ub1: 99999, lb2: 1, ub2: 4 },
+        [Operation.FactorsOf12]: { lb1: 1, ub1: 12, lb2: 1, ub2: 12 },
+      };
+      const defaults = operationDefaults[operation];
+      if (defaults) {
+        currentLowerBound1 = defaults.lb1;
+        currentUpperBound1 = defaults.ub1;
+        currentLowerBound2 = defaults.lb2;
+        currentUpperBound2 = defaults.ub2;
+      } else {
+        currentLowerBound1 = lowerBound1;
+        currentUpperBound1 = upperBound1;
+        currentLowerBound2 = lowerBound2;
+        currentUpperBound2 = upperBound2;
+      }
     }
 
     let num1 = getRandomInt(currentLowerBound1, currentUpperBound1);
     let num2 = getRandomInt(currentLowerBound2, currentUpperBound2);
     let factorsTarget = 0;
+    let expandedDigits: number[] = [];
+    let expandedLabels: string[] = [];
 
     switch (operation) {
       case Operation.Addition:
@@ -363,11 +379,102 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         correctAnswer = 0;
         break;
       }
+      case Operation.ExpandedNotation: {
+        // Generate a number and ask the user to break it down into place values
+        // num1 controls the whole number part range, num2 controls decimal places (0=none, 1=tenths, 2=hundredths)
+        const wholeNumber = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
+        const clampedLowerDecimal = Math.max(0, Math.min(2, currentLowerBound2));
+        const clampedUpperDecimal = Math.max(0, Math.min(2, currentUpperBound2));
+        const decimalMin = Math.min(clampedLowerDecimal, clampedUpperDecimal);
+        const decimalMax = Math.max(clampedLowerDecimal, clampedUpperDecimal);
+        const decimalPlaces = getRandomInt(decimalMin, decimalMax);
+        
+        let fullNumber = wholeNumber;
+        let tenthsDigit = 0;
+        let hundredthsDigit = 0;
+        
+        if (decimalPlaces >= 1) {
+          tenthsDigit = getRandomInt(0, 9);
+          fullNumber = wholeNumber + tenthsDigit / 10;
+        }
+        if (decimalPlaces >= 2) {
+          hundredthsDigit = getRandomInt(0, 9);
+          fullNumber = wholeNumber + tenthsDigit / 10 + hundredthsDigit / 100;
+        }
+        
+        // Format the display number
+        const displayNumber = decimalPlaces === 0
+          ? wholeNumber.toLocaleString()
+          : fullNumber.toLocaleString(undefined, { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces });
+        
+        text = `Break down ${displayNumber}`;
+        correctAnswer = 0;
+        
+        // Build place values from the whole number digits
+        const wholeStr = wholeNumber.toString();
+        expandedDigits = [];
+        expandedLabels = [];
+        
+        for (let d = 0; d < wholeStr.length; d++) {
+          const placeValue = Math.pow(10, wholeStr.length - 1 - d);
+          expandedDigits.push(parseInt(wholeStr[d], 10));
+          expandedLabels.push(`× ${placeValue.toLocaleString()}`);
+        }
+        
+        if (decimalPlaces >= 1) {
+          expandedDigits.push(tenthsDigit);
+          expandedLabels.push('× 0.1');
+        }
+        if (decimalPlaces >= 2) {
+          expandedDigits.push(hundredthsDigit);
+          expandedLabels.push('× 0.01');
+        }
+        
+        break;
+      }
+      case Operation.RoundingNumbers: {
+        // Generate a number and ask the user to round it to a randomly chosen place value
+        // lowerBound1/upperBound1 control the number range
+        // lowerBound2 controls the minimum rounding place (power of 10: 1=tens, 2=hundreds, 3=thousands)
+        // upperBound2 controls the maximum rounding place
+        const number = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
+        
+        // Determine valid rounding places based on the number's magnitude
+        const numDigits = number.toString().length;
+        const minPlace = Math.max(1, Math.min(currentLowerBound2, numDigits - 1));
+        const maxPlace = Math.min(currentUpperBound2, numDigits - 1);
+        
+        // Pick a random rounding place (as a power of 10)
+        const roundingPower = getRandomInt(minPlace, Math.max(minPlace, maxPlace));
+        const roundingValue = Math.pow(10, roundingPower);
+        
+        // Round the number
+        const rounded = Math.round(number / roundingValue) * roundingValue;
+        
+        // Format the place name
+        const placeNames: Record<number, string> = {
+          1: 'ten',
+          2: 'hundred',
+          3: 'thousand',
+          4: 'ten thousand',
+          5: 'hundred thousand',
+          6: 'million',
+        };
+        const placeName = placeNames[roundingPower] || `nearest ${roundingValue.toLocaleString()}`;
+        
+        text = `Round ${number.toLocaleString()} to the nearest ${placeName}`;
+        correctAnswer = rounded;
+        break;
+      }
     }
     
     const question: Question = { id: i, text, correctAnswer };
     if (operation === Operation.FactorsOf12) {
       question.correctAnswers = getFactors(factorsTarget).sort((a, b) => a - b);
+    }
+    if (operation === Operation.ExpandedNotation) {
+      question.correctAnswers = expandedDigits;
+      question.answerLabels = expandedLabels;
     }
     questions.push(question);
   }

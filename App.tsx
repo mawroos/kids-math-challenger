@@ -8,6 +8,7 @@ import WritingChallengeScreen from './components/WritingChallengeScreen';
 import WritingResultsScreen from './components/WritingResultsScreen';
 import ProblemSolvingScreen from './components/ProblemSolvingScreen';
 import ProblemSolvingResultsScreen from './components/ProblemSolvingResultsScreen';
+import FocusGuard from './components/FocusGuard';
 import { generateQuestions } from './utils/quizGenerator';
 import { generateProblemSolvingQuestions } from './utils/problemSolvingGenerator';
 import { sessionStorageUtils } from './utils/sessionStorage';
@@ -81,8 +82,33 @@ const App: React.FC = () => {
 
   const startQuizFromUrl = (urlSettings: QuizSettings) => {
     setQuizSettings(urlSettings);
-    setQuestions(generateQuestions(urlSettings));
-    setAppState(AppState.QUIZ);
+    
+    // Generate problem solving questions if problem types are present in URL settings
+    if (urlSettings.problemTypes && urlSettings.problemTypes.length > 0) {
+      const psSettings: ProblemSolvingSettings = {
+        numQuestions: urlSettings.psNumQuestions || 10,
+        problemTypes: urlSettings.problemTypes,
+        soundEnabled: urlSettings.soundEnabled,
+      };
+      setProblemSolvingSettings(psSettings);
+      setProblemSolvingQuestions(generateProblemSolvingQuestions(psSettings));
+    } else {
+      setProblemSolvingSettings(null);
+      setProblemSolvingQuestions([]);
+      setProblemSolvingResults(null);
+    }
+    
+    // If math operations are selected, start with math quiz; otherwise go to problem solving
+    if (urlSettings.operations.length > 0) {
+      setQuestions(generateQuestions(urlSettings));
+      setAppState(AppState.QUIZ);
+    } else if (urlSettings.problemTypes && urlSettings.problemTypes.length > 0) {
+      setAppState(AppState.PROBLEM_SOLVING);
+    } else {
+      setQuestions(generateQuestions(urlSettings));
+      setAppState(AppState.QUIZ);
+    }
+    
     setSessionRestored(true);
     setIsFromUrl(true);
     
@@ -137,16 +163,37 @@ const App: React.FC = () => {
 
   const handleStartQuiz = useCallback((settings: QuizSettings) => {
     setQuizSettings(settings);
-    setQuestions(generateQuestions(settings));
-    setAppState(AppState.QUIZ);
     
-    // Track quiz start
-    analytics.trackQuizStart('math', settings.numQuestions);
+    // Generate problem solving questions if problem types are selected
+    if (settings.problemTypes && settings.problemTypes.length > 0) {
+      const psSettings: ProblemSolvingSettings = {
+        numQuestions: settings.psNumQuestions || 10,
+        problemTypes: settings.problemTypes,
+        soundEnabled: settings.soundEnabled,
+      };
+      setProblemSolvingSettings(psSettings);
+      setProblemSolvingQuestions(generateProblemSolvingQuestions(psSettings));
+    } else {
+      // Clear any stale problem-solving state from a previous run
+      setProblemSolvingSettings(null);
+      setProblemSolvingQuestions([]);
+      setProblemSolvingResults(null);
+    }
+    
+    // If math operations are selected, start with the math quiz
+    if (settings.operations.length > 0) {
+      setQuestions(generateQuestions(settings));
+      setAppState(AppState.QUIZ);
+      analytics.trackQuizStart('math', settings.numQuestions);
+    } else {
+      // Only problem solving selected, go straight to problem solving
+      setAppState(AppState.PROBLEM_SOLVING);
+      analytics.trackQuizStart('problem-solving', settings.psNumQuestions || 10);
+    }
   }, []);
 
   const handleFinishQuiz = useCallback((results: QuizResults) => {
     setQuizResults(results);
-    setAppState(AppState.RESULTS);
     
     // Track quiz completion
     analytics.trackQuizComplete('math', results.score, results.total, results.time);
@@ -155,7 +202,15 @@ const App: React.FC = () => {
     if (quizSettings) {
       sessionStorageUtils.saveCompletedSession(questions, results, quizSettings);
     }
-  }, [questions, quizSettings]);
+    
+    // If there are problem solving questions, transition to problem solving next
+    if (problemSolvingQuestions.length > 0) {
+      setAppState(AppState.PROBLEM_SOLVING);
+      analytics.trackQuizStart('problem-solving', problemSolvingQuestions.length);
+    } else {
+      setAppState(AppState.RESULTS);
+    }
+  }, [questions, quizSettings, problemSolvingQuestions]);
 
   const handleCancelQuiz = useCallback(() => {
     // Save incomplete session to history before clearing
@@ -225,17 +280,48 @@ const App: React.FC = () => {
 
   const handleFinishProblemSolving = useCallback((results: ProblemSolvingResults) => {
     setProblemSolvingResults(results);
-    setAppState(AppState.PROBLEM_SOLVING_RESULTS);
     
     analytics.trackQuizComplete('problem-solving', results.score, results.total, results.time);
+    
+    // If there were also math quiz results, go to problem solving results
+    // (the user already saw the math quiz, now showing PS results)
+    setAppState(AppState.PROBLEM_SOLVING_RESULTS);
   }, []);
 
   const handleCancelProblemSolving = useCallback(() => {
     setProblemSolvingSettings(null);
     setProblemSolvingQuestions([]);
     setProblemSolvingResults(null);
+    // If there are math quiz results, show them instead of going back to setup
+    if (quizResults) {
+      setAppState(AppState.RESULTS);
+    } else {
+      setQuestions([]);
+      setQuizResults(null);
+      setQuizSettings(null);
+      setAppState(AppState.SETUP);
+    }
+  }, [quizResults]);
+
+  const handleFocusGuardReset = useCallback(() => {
+    // Don't save session — quiz was reset due to focus loss
+    setQuestions([]);
+    setQuizResults(null);
+    setQuizSettings(null);
+    setProblemSolvingSettings(null);
+    setProblemSolvingQuestions([]);
+    setProblemSolvingResults(null);
     setAppState(AppState.SETUP);
+    sessionStorageUtils.clearSession();
   }, []);
+
+  // Exit fullscreen when leaving guarded quiz states
+  useEffect(() => {
+    const guardedStates = [AppState.QUIZ, AppState.PROBLEM_SOLVING];
+    if (!guardedStates.includes(appState) && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, [appState]);
 
   const handleLoadSession = useCallback((sessionId: string) => {
     const session = sessionStorageUtils.loadSessionById(sessionId);
@@ -270,7 +356,11 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (appState) {
       case AppState.QUIZ:
-        return <QuizScreen questions={questions} onFinishQuiz={handleFinishQuiz} onCancel={handleCancelQuiz} soundEnabled={quizSettings?.soundEnabled ?? true} />;
+        return (
+          <FocusGuard onReset={handleFocusGuardReset}>
+            <QuizScreen questions={questions} onFinishQuiz={handleFinishQuiz} onCancel={handleCancelQuiz} soundEnabled={quizSettings?.soundEnabled ?? true} />
+          </FocusGuard>
+        );
       case AppState.RESULTS:
         return <ResultsScreen results={quizResults!} onRestart={handleRestart} soundEnabled={quizSettings?.soundEnabled ?? true} />;
       case AppState.WRITING_CHALLENGE:
@@ -281,13 +371,15 @@ const App: React.FC = () => {
         return <WritingResultsScreen result={writingResult!} onRestart={handleRestart} />;
       case AppState.PROBLEM_SOLVING:
         return problemSolvingQuestions.length > 0 ? (
-          <ProblemSolvingScreen questions={problemSolvingQuestions} onFinish={handleFinishProblemSolving} onCancel={handleCancelProblemSolving} soundEnabled={problemSolvingSettings?.soundEnabled ?? true} />
+          <FocusGuard onReset={handleFocusGuardReset}>
+            <ProblemSolvingScreen questions={problemSolvingQuestions} onFinish={handleFinishProblemSolving} onCancel={handleCancelProblemSolving} soundEnabled={problemSolvingSettings?.soundEnabled ?? true} />
+          </FocusGuard>
         ) : null;
       case AppState.PROBLEM_SOLVING_RESULTS:
         return <ProblemSolvingResultsScreen results={problemSolvingResults!} onRestart={handleRestart} soundEnabled={problemSolvingSettings?.soundEnabled ?? true} />;
       case AppState.SETUP:
       default:
-        return <SetupScreen onStartQuiz={handleStartQuiz} onStartWritingChallenge={handleStartWritingChallenge} onStartProblemSolving={handleStartProblemSolving} onLoadSession={handleLoadSession} />;
+        return <SetupScreen onStartQuiz={handleStartQuiz} onStartWritingChallenge={handleStartWritingChallenge} onLoadSession={handleLoadSession} />;
     }
   };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { QuizSettings, Operation, OperationRanges, ChallengeType, WritingChallengeSettings, ProblemSolvingSettings, ProblemType } from '../types';
+import { QuizSettings, Operation, OperationRanges, ChallengeType, WritingChallengeSettings, ProblemType } from '../types';
 import { sessionStorageUtils } from '../utils/sessionStorage';
 import { urlUtils } from '../utils/urlUtils';
 import QRCodeGenerator from './QRCodeGenerator';
@@ -8,7 +8,6 @@ import SessionHistory from './SessionHistory';
 interface SetupScreenProps {
   onStartQuiz: (settings: QuizSettings) => void;
   onStartWritingChallenge?: (settings: WritingChallengeSettings) => void;
-  onStartProblemSolving?: (settings: ProblemSolvingSettings) => void;
   onLoadSession?: (sessionId: string) => void;
 }
 
@@ -35,7 +34,7 @@ const OperationButton: React.FC<{
   );
 };
 
-const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingChallenge, onStartProblemSolving, onLoadSession }) => {
+const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingChallenge, onLoadSession }) => {
   const [challengeType, setChallengeType] = useState<ChallengeType>(ChallengeType.MATH);
   const [schoolYear, setSchoolYear] = useState<number>(3);
   const [lowerBound1, setLowerBound1] = useState<number>(1);
@@ -53,10 +52,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
   
   // Problem solving state
   const [psNumQuestions, setPsNumQuestions] = useState<number>(10);
-  const [psSoundEnabled, setPsSoundEnabled] = useState<boolean>(true);
-  const [selectedProblemTypes, setSelectedProblemTypes] = useState<ProblemType[]>([
-    'word-problem', 'column-calculation', 'money-problem', 'missing-number'
-  ]);
+  const [selectedProblemTypes, setSelectedProblemTypes] = useState<ProblemType[]>([]);
   
   // Initialize operation ranges with default values
   const [operationRanges, setOperationRanges] = useState<Partial<OperationRanges>>({
@@ -75,6 +71,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
     [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
     [Operation.FactorsOf12]: { lowerBound1: 1, upperBound1: 12, lowerBound2: 1, upperBound2: 12 },
+    [Operation.ExpandedNotation]: { lowerBound1: 100, upperBound1: 99999, lowerBound2: 0, upperBound2: 2 },
+    [Operation.RoundingNumbers]: { lowerBound1: 10, upperBound1: 99999, lowerBound2: 1, upperBound2: 4 },
   });
 
   const handleClearSession = () => {
@@ -115,31 +113,35 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       case Operation.DecimalRepresentation: return 'Decimals & Fractions';
       case Operation.FractionToOne: return 'Fractions to 1';
       case Operation.FactorsOf12: return 'Find Factors';
+      case Operation.ExpandedNotation: return 'Expanded Notation';
+      case Operation.RoundingNumbers: return 'Rounding Numbers';
       default: return '';
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedOps.length === 0) {
-      setError('Please select at least one operation.');
+    if (selectedOps.length === 0 && selectedProblemTypes.length === 0) {
+      setError('Please select at least one operation or problem type.');
       return;
     }
     
-    if (customMode) {
-      // Validate custom ranges for each selected operation
-      for (const op of selectedOps) {
-        const ranges = operationRanges[op];
-        if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || ranges.lowerBound2 >= ranges.upperBound2) {
-          setError(`Invalid ranges for ${getOperationLabel(op)}. Lower bounds must be less than upper bounds.`);
+    if (selectedOps.length > 0) {
+      if (customMode) {
+        // Validate custom ranges for each selected operation
+        for (const op of selectedOps) {
+          const ranges = operationRanges[op];
+          if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || ranges.lowerBound2 >= ranges.upperBound2) {
+            setError(`Invalid ranges for ${getOperationLabel(op)}. Lower bounds must be less than upper bounds.`);
+            return;
+          }
+        }
+      } else {
+        // Validate global ranges
+        if (lowerBound1 >= upperBound1 || lowerBound2 >= upperBound2) {
+          setError('Lower bound must be less than its corresponding upper bound.');
           return;
         }
-      }
-    } else {
-      // Validate global ranges
-      if (lowerBound1 >= upperBound1 || lowerBound2 >= upperBound2) {
-        setError('Lower bound must be less than its corresponding upper bound.');
-        return;
       }
     }
     
@@ -154,29 +156,33 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       soundEnabled,
       customMode,
       operationRanges: customMode ? operationRanges : undefined,
+      problemTypes: selectedProblemTypes.length > 0 ? selectedProblemTypes : undefined,
+      psNumQuestions: selectedProblemTypes.length > 0 ? psNumQuestions : undefined,
     });
   };
 
   const generateShareableLink = () => {
-    if (selectedOps.length === 0) {
-      setError('Please select at least one operation to generate a link.');
+    if (selectedOps.length === 0 && selectedProblemTypes.length === 0) {
+      setError('Please select at least one operation or problem type to generate a link.');
       return;
     }
     
-    if (customMode) {
-      // Validate custom ranges for each selected operation
-      for (const op of selectedOps) {
-        const ranges = operationRanges[op];
-        if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || ranges.lowerBound2 >= ranges.upperBound2) {
-          setError(`Invalid ranges for ${getOperationLabel(op)}. Lower bounds must be less than upper bounds.`);
+    if (selectedOps.length > 0) {
+      if (customMode) {
+        // Validate custom ranges for each selected operation
+        for (const op of selectedOps) {
+          const ranges = operationRanges[op];
+          if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || ranges.lowerBound2 >= ranges.upperBound2) {
+            setError(`Invalid ranges for ${getOperationLabel(op)}. Lower bounds must be less than upper bounds.`);
+            return;
+          }
+        }
+      } else {
+        // Validate global ranges
+        if (lowerBound1 >= upperBound1 || lowerBound2 >= upperBound2) {
+          setError('Lower bound must be less than its corresponding upper bound.');
           return;
         }
-      }
-    } else {
-      // Validate global ranges
-      if (lowerBound1 >= upperBound1 || lowerBound2 >= upperBound2) {
-        setError('Lower bound must be less than its corresponding upper bound.');
-        return;
       }
     }
     
@@ -192,6 +198,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       soundEnabled,
       customMode,
       operationRanges: customMode ? operationRanges : undefined,
+      problemTypes: selectedProblemTypes.length > 0 ? selectedProblemTypes : undefined,
+      psNumQuestions: selectedProblemTypes.length > 0 ? psNumQuestions : undefined,
     };
     
     const url = urlUtils.generateShareableUrl(settings);
@@ -333,20 +341,6 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     );
   };
 
-  const handleStartProblemSolving = () => {
-    if (!onStartProblemSolving) return;
-    if (selectedProblemTypes.length === 0) {
-      setError('Please select at least one problem type.');
-      return;
-    }
-    setError('');
-    onStartProblemSolving({
-      numQuestions: psNumQuestions,
-      problemTypes: selectedProblemTypes,
-      soundEnabled: psSoundEnabled
-    });
-  };
-
   return (
     <div className="animate-fade-in">
       {showHistory && (
@@ -406,20 +400,6 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
             <div className="flex flex-col items-center gap-2">
               <span className="text-3xl">✍️</span>
               <span>Writing Challenge</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setChallengeType(ChallengeType.PROBLEM_SOLVING)}
-            className={`flex-1 max-w-xs py-4 px-6 rounded-lg font-semibold transition-all duration-200 ${
-              challengeType === ChallengeType.PROBLEM_SOLVING
-                ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg scale-105'
-                : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-            }`}
-          >
-            <div className="flex flex-col items-center gap-2">
-              <span className="text-3xl">🧩</span>
-              <span>Problem Solving</span>
             </div>
           </button>
         </div>
@@ -484,109 +464,6 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
         </div>
       )}
 
-      {/* Problem Solving Setup */}
-      {challengeType === ChallengeType.PROBLEM_SOLVING && (
-        <div className="space-y-6">
-          <div className="bg-gradient-to-r from-amber-600/20 to-orange-600/20 border-2 border-amber-500/50 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-amber-300 mb-4">Year 5 Problem Solving</h3>
-            <p className="text-slate-300 mb-6">
-              Practise Addition &amp; Subtraction with word problems, column calculations, money problems, and missing number challenges. Designed for 9–10-year-olds with hints and step-by-step solutions!
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="psNumQuestions" className="block text-sm font-medium text-slate-300 mb-2">
-                  Number of Questions
-                </label>
-                <input
-                  id="psNumQuestions"
-                  type="number"
-                  value={psNumQuestions}
-                  onChange={(e) => setPsNumQuestions(parseInt(e.target.value, 10) || 1)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
-                  min="1"
-                  max="50"
-                />
-              </div>
-
-              <div>
-                <h4 className="text-sm font-medium text-slate-300 mb-3">Problem Types</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {([
-                    { type: 'word-problem' as ProblemType, label: 'Word Problems', icon: '📝' },
-                    { type: 'column-calculation' as ProblemType, label: 'Column Calculations', icon: '🔢' },
-                    { type: 'money-problem' as ProblemType, label: 'Money Problems', icon: '💷' },
-                    { type: 'missing-number' as ProblemType, label: 'Missing Numbers', icon: '❓' },
-                  ]).map(({ type, label, icon }) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => handleProblemTypeToggle(type)}
-                      className={`flex flex-col items-center justify-center p-3 border-2 rounded-lg transition-all duration-200 ${
-                        selectedProblemTypes.includes(type)
-                          ? 'bg-amber-500 border-amber-400 text-white shadow-lg scale-105'
-                          : 'bg-slate-700 border-slate-600 hover:bg-slate-600 hover:border-slate-500'
-                      }`}
-                    >
-                      <span className="text-2xl">{icon}</span>
-                      <span className="mt-1 text-sm font-semibold">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-center space-x-3 py-2">
-                <label htmlFor="psSoundToggle" className="text-sm font-medium text-slate-400">
-                  Sound Effects
-                </label>
-                <button
-                  type="button"
-                  id="psSoundToggle"
-                  onClick={() => setPsSoundEnabled(!psSoundEnabled)}
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
-                    psSoundEnabled ? 'bg-amber-500' : 'bg-slate-600'
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                      psSoundEnabled ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </button>
-                <span className="text-sm text-slate-500">
-                  {psSoundEnabled ? 'On' : 'Off'}
-                </span>
-              </div>
-
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-                <h4 className="text-amber-300 font-semibold mb-2">🧩 What to Expect:</h4>
-                <ul className="text-slate-300 text-sm space-y-1 list-disc list-inside">
-                  <li>Multiple choice questions with 4 answer options</li>
-                  <li>Hints when you get an answer wrong</li>
-                  <li>Step-by-step solution breakdowns</li>
-                  <li>Numbers in the Year 5 range (1,000 to 100,000)</li>
-                  <li>Three difficulty levels: Easy, Medium, Hard</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {error && (
-            <div className="bg-red-500/20 border border-red-500 rounded-lg p-4">
-              <p className="text-red-300">{error}</p>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={handleStartProblemSolving}
-            className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold py-4 px-6 rounded-lg shadow-lg transition-all duration-200 transform hover:scale-105"
-          >
-            🧩 Start Problem Solving
-          </button>
-        </div>
-      )}
       
       {/* Preset Settings Section - Only show for Math */}
       {challengeType === ChallengeType.MATH && (
@@ -702,6 +579,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
             <OperationButton op={Operation.GroupingToTarget} label="Grouping" icon="🎯" selected={selectedOps.includes(Operation.GroupingToTarget)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.GroupingByTensHundreds} label="10s/100s" icon="💯" selected={selectedOps.includes(Operation.GroupingByTensHundreds)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.FactorsOf12} label="Factors" icon="🔢" selected={selectedOps.includes(Operation.FactorsOf12)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.ExpandedNotation} label="Expanded" icon="🔣" selected={selectedOps.includes(Operation.ExpandedNotation)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.RoundingNumbers} label="Rounding" icon="🔵" selected={selectedOps.includes(Operation.RoundingNumbers)} onClick={handleOperationToggle} />
           </div>
           {selectedOps.includes(Operation.FractionEquivalents) && (
             <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
@@ -802,6 +681,70 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
               </p>
             </div>
           )}
+          {selectedOps.includes(Operation.ExpandedNotation) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-emerald-400">Expanded Notation:</span> Break a number down into its place values.
+                <br />
+                <span className="text-slate-400 text-xs">Example: 50,284 → [5] × 10,000 + [0] × 1,000 + [2] × 100 + [8] × 10 + [4] × 1</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.RoundingNumbers) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-blue-400">Rounding Numbers:</span> Round numbers to the nearest ten, hundred, thousand, etc.
+                <br />
+                <span className="text-slate-400 text-xs">Examples: 673 → 670 (nearest ten), 4,294 → 4,300 (nearest hundred), 15,427 → 15,000 (nearest thousand)</span>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Problem Solving Section */}
+        <div className="mt-6 bg-gradient-to-r from-amber-600/20 to-orange-600/20 border-2 border-amber-500/50 rounded-lg p-4">
+          <h3 className="text-sm font-medium text-amber-300 mb-3 text-center">🧩 Problem Solving</h3>
+          <p className="text-slate-400 text-xs text-center mb-3">
+            Optionally add word problems, column calculations, money problems, and missing number challenges.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            {([
+              { type: 'word-problem' as ProblemType, label: 'Word Problems', icon: '📝' },
+              { type: 'column-calculation' as ProblemType, label: 'Column Calc', icon: '🔢' },
+              { type: 'money-problem' as ProblemType, label: 'Money Problems', icon: '💷' },
+              { type: 'missing-number' as ProblemType, label: 'Missing Numbers', icon: '❓' },
+            ]).map(({ type, label, icon }) => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => handleProblemTypeToggle(type)}
+                className={`flex flex-col items-center justify-center p-3 border-2 rounded-lg transition-all duration-200 ${
+                  selectedProblemTypes.includes(type)
+                    ? 'bg-amber-500 border-amber-400 text-white shadow-lg scale-105'
+                    : 'bg-slate-700 border-slate-600 hover:bg-slate-600 hover:border-slate-500'
+                }`}
+              >
+                <span className="text-2xl">{icon}</span>
+                <span className="mt-1 text-xs font-semibold">{label}</span>
+              </button>
+            ))}
+          </div>
+          {selectedProblemTypes.length > 0 && (
+            <div className="mt-3">
+              <label htmlFor="psNumQuestions" className="block text-sm font-medium text-slate-300 mb-2">
+                Problem Solving Questions
+              </label>
+              <input
+                id="psNumQuestions"
+                type="number"
+                value={psNumQuestions}
+                onChange={(e) => setPsNumQuestions(parseInt(e.target.value, 10) || 1)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
+                min="1"
+                max="50"
+              />
+            </div>
+          )}
         </div>
 
         {/* Custom Mode Toggle */}
@@ -853,7 +796,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.GroupingToTarget ? 'Target Value (Lower)' : 
                          op === Operation.GroupingByTensHundreds ? 'For 100 (10s Lower)' :
-                         op === Operation.FactorsOf12 ? 'Number Range (From)' : 'First Number (Lower)'}
+                         op === Operation.FactorsOf12 ? 'Number Range (From)' :
+                         op === Operation.ExpandedNotation ? 'Number Range (From)' :
+                         op === Operation.RoundingNumbers ? 'Number Range (From)' : 'First Number (Lower)'}
                       </label>
                       <input
                         type="number"
@@ -867,7 +812,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.GroupingToTarget ? 'Target Value (Upper)' : 
                          op === Operation.GroupingByTensHundreds ? 'For 100 (10s Upper)' :
-                         op === Operation.FactorsOf12 ? 'Number Range (To)' : 'First Number (Upper)'}
+                         op === Operation.FactorsOf12 ? 'Number Range (To)' :
+                         op === Operation.ExpandedNotation ? 'Number Range (To)' :
+                         op === Operation.RoundingNumbers ? 'Number Range (To)' : 'First Number (Upper)'}
                       </label>
                       <input
                         type="number"
@@ -881,7 +828,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.FractionEquivalents ? 'Multiplier (Lower)' : 
                          op === Operation.GroupingToTarget ? 'Known Number (Lower)' :
-                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Lower)' : 'Second Number (Lower)'}
+                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Lower)' :
+                         op === Operation.ExpandedNotation ? 'Decimal Places (0-2)' :
+                         op === Operation.RoundingNumbers ? 'Min Place (1=ten, 2=hundred, 3=thousand)' : 'Second Number (Lower)'}
                       </label>
                       <input
                         type="number"
@@ -895,7 +844,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.FractionEquivalents ? 'Denominator (Upper)' : 
                          op === Operation.GroupingToTarget ? 'Known Number (Upper)' :
-                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Upper)' : 'Second Number (Upper)'}
+                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Upper)' :
+                         op === Operation.ExpandedNotation ? '(unused)' :
+                         op === Operation.RoundingNumbers ? 'Max Place (4=ten thousand, 5=hundred thousand)' : 'Second Number (Upper)'}
                       </label>
                       <input
                         type="number"
