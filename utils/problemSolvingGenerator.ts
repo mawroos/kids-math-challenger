@@ -672,14 +672,14 @@ const wordProblemTemplates: WordProblemTemplate[] = [
       const answer = goal - raised;
 
       return {
-        questionText: `A charity needs to raise £${goal.toLocaleString()} for a new playground. So far they have raised £${raised.toLocaleString()}. How much more do they need to raise?`,
+        questionText: `A charity needs to raise $${goal.toLocaleString()} for a new playground. So far they have raised $${raised.toLocaleString()}. How much more do they need to raise?`,
         correctAnswer: answer,
         hintText: 'Subtract the amount already raised from the total goal to find what is left.',
         stepByStep: [
-          `Total goal: £${goal.toLocaleString()}`,
-          `Already raised: £${raised.toLocaleString()}`,
-          `Amount still needed: £${goal.toLocaleString()} - £${raised.toLocaleString()} = £${answer.toLocaleString()}`,
-          `Answer: £${answer.toLocaleString()}`
+          `Total goal: $${goal.toLocaleString()}`,
+          `Already raised: $${raised.toLocaleString()}`,
+          `Amount still needed: $${goal.toLocaleString()} - $${raised.toLocaleString()} = $${answer.toLocaleString()}`,
+          `Answer: $${answer.toLocaleString()}`
         ]
       };
     }
@@ -703,15 +703,15 @@ const wordProblemTemplates: WordProblemTemplate[] = [
       const total = a1 + a2 + a3;
 
       return {
-        questionText: `${school} raised money from three events. The ${event1} raised £${a1.toLocaleString()}, the ${event2} raised £${a2.toLocaleString()}, and the ${event3} raised £${a3.toLocaleString()}. How much was raised in total?`,
+        questionText: `${school} raised money from three events. The ${event1} raised $${a1.toLocaleString()}, the ${event2} raised $${a2.toLocaleString()}, and the ${event3} raised $${a3.toLocaleString()}. How much was raised in total?`,
         correctAnswer: total,
         hintText: 'Add up the amounts from all three events.',
         stepByStep: [
-          `${event1}: £${a1.toLocaleString()}`,
-          `${event2}: £${a2.toLocaleString()}`,
-          `${event3}: £${a3.toLocaleString()}`,
-          `Total: £${a1.toLocaleString()} + £${a2.toLocaleString()} + £${a3.toLocaleString()} = £${total.toLocaleString()}`,
-          `Answer: £${total.toLocaleString()}`
+          `${event1}: $${a1.toLocaleString()}`,
+          `${event2}: $${a2.toLocaleString()}`,
+          `${event3}: $${a3.toLocaleString()}`,
+          `Total: $${a1.toLocaleString()} + $${a2.toLocaleString()} + $${a3.toLocaleString()} = $${total.toLocaleString()}`,
+          `Answer: $${total.toLocaleString()}`
         ]
       };
     }

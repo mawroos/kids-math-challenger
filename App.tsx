@@ -82,8 +82,33 @@ const App: React.FC = () => {
 
   const startQuizFromUrl = (urlSettings: QuizSettings) => {
     setQuizSettings(urlSettings);
-    setQuestions(generateQuestions(urlSettings));
-    setAppState(AppState.QUIZ);
+    
+    // Generate problem solving questions if problem types are present in URL settings
+    if (urlSettings.problemTypes && urlSettings.problemTypes.length > 0) {
+      const psSettings: ProblemSolvingSettings = {
+        numQuestions: urlSettings.psNumQuestions || 10,
+        problemTypes: urlSettings.problemTypes,
+        soundEnabled: urlSettings.soundEnabled,
+      };
+      setProblemSolvingSettings(psSettings);
+      setProblemSolvingQuestions(generateProblemSolvingQuestions(psSettings));
+    } else {
+      setProblemSolvingSettings(null);
+      setProblemSolvingQuestions([]);
+      setProblemSolvingResults(null);
+    }
+    
+    // If math operations are selected, start with math quiz; otherwise go to problem solving
+    if (urlSettings.operations.length > 0) {
+      setQuestions(generateQuestions(urlSettings));
+      setAppState(AppState.QUIZ);
+    } else if (urlSettings.problemTypes && urlSettings.problemTypes.length > 0) {
+      setAppState(AppState.PROBLEM_SOLVING);
+    } else {
+      setQuestions(generateQuestions(urlSettings));
+      setAppState(AppState.QUIZ);
+    }
+    
     setSessionRestored(true);
     setIsFromUrl(true);
     
@@ -148,6 +173,11 @@ const App: React.FC = () => {
       };
       setProblemSolvingSettings(psSettings);
       setProblemSolvingQuestions(generateProblemSolvingQuestions(psSettings));
+    } else {
+      // Clear any stale problem-solving state from a previous run
+      setProblemSolvingSettings(null);
+      setProblemSolvingQuestions([]);
+      setProblemSolvingResults(null);
     }
     
     // If math operations are selected, start with the math quiz

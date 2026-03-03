@@ -61,10 +61,24 @@ export function generateQuestions(settings: QuizSettings): Question[] {
       currentLowerBound2 = ranges.lowerBound2;
       currentUpperBound2 = ranges.upperBound2;
     } else {
-      currentLowerBound1 = lowerBound1;
-      currentUpperBound1 = upperBound1;
-      currentLowerBound2 = lowerBound2;
-      currentUpperBound2 = upperBound2;
+      // Operations with specialised defaults that don't work with generic bounds
+      const operationDefaults: Partial<Record<Operation, { lb1: number; ub1: number; lb2: number; ub2: number }>> = {
+        [Operation.ExpandedNotation]: { lb1: 100, ub1: 99999, lb2: 0, ub2: 0 },
+        [Operation.RoundingNumbers]: { lb1: 10, ub1: 99999, lb2: 1, ub2: 4 },
+        [Operation.FactorsOf12]: { lb1: 1, ub1: 12, lb2: 1, ub2: 12 },
+      };
+      const defaults = operationDefaults[operation];
+      if (defaults) {
+        currentLowerBound1 = defaults.lb1;
+        currentUpperBound1 = defaults.ub1;
+        currentLowerBound2 = defaults.lb2;
+        currentUpperBound2 = defaults.ub2;
+      } else {
+        currentLowerBound1 = lowerBound1;
+        currentUpperBound1 = upperBound1;
+        currentLowerBound2 = lowerBound2;
+        currentUpperBound2 = upperBound2;
+      }
     }
 
     let num1 = getRandomInt(currentLowerBound1, currentUpperBound1);
@@ -369,7 +383,11 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         // Generate a number and ask the user to break it down into place values
         // num1 controls the whole number part range, num2 controls decimal places (0=none, 1=tenths, 2=hundredths)
         const wholeNumber = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
-        const decimalPlaces = Math.min(2, Math.max(0, currentLowerBound2));
+        const clampedLowerDecimal = Math.max(0, Math.min(2, currentLowerBound2));
+        const clampedUpperDecimal = Math.max(0, Math.min(2, currentUpperBound2));
+        const decimalMin = Math.min(clampedLowerDecimal, clampedUpperDecimal);
+        const decimalMax = Math.max(clampedLowerDecimal, clampedUpperDecimal);
+        const decimalPlaces = getRandomInt(decimalMin, decimalMax);
         
         let fullNumber = wholeNumber;
         let tenthsDigit = 0;

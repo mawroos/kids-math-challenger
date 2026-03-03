@@ -117,7 +117,7 @@ const FocusGuard: React.FC<FocusGuardProps> = ({ onReset, children }) => {
         </p>
         <p className="text-slate-400 mb-8">
           Switching tabs or leaving the screen will result in warnings.<br />
-          After {MAX_WARNINGS} warnings, the quiz will be reset.
+          If you exceed {MAX_WARNINGS} warnings, the quiz will be reset.
         </p>
         <button
           onClick={handleEnter}

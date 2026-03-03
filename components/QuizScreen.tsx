@@ -82,16 +82,38 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
       const numericValue = parseInt(value, 10);
       let isCorrect: boolean;
       if (question.correctAnswers) {
-        isCorrect = question.correctAnswers.includes(numericValue);
+        const hasLabels = question.answerLabels && question.answerLabels.length === question.correctAnswers.length;
+        if (hasLabels) {
+          // Positional matching (expanded notation): extract box index from key
+          const parts = answerKey.split('_');
+          const boxIndex = parseInt(parts[parts.length - 1], 10);
+          isCorrect = !isNaN(boxIndex) && numericValue === question.correctAnswers[boxIndex];
+        } else {
+          // Unordered matching (factors)
+          isCorrect = question.correctAnswers.includes(numericValue);
+        }
       } else {
         isCorrect = numericValue === question.correctAnswer;
       }
-      const wasCorrect = previousAnswer !== undefined && 
+      const wasCorrectPrev = previousAnswer !== undefined && 
                         previousAnswer !== '' && 
-                        !isNaN(parseInt(previousAnswer, 10)) && 
-                        (question.correctAnswers
-                          ? question.correctAnswers.includes(parseInt(previousAnswer, 10))
-                          : parseInt(previousAnswer, 10) === question.correctAnswer);
+                        !isNaN(parseInt(previousAnswer, 10));
+      let wasCorrect = false;
+      if (wasCorrectPrev) {
+        const prevNum = parseInt(previousAnswer, 10);
+        if (question.correctAnswers) {
+          const hasLabels = question.answerLabels && question.answerLabels.length === question.correctAnswers.length;
+          if (hasLabels) {
+            const parts = answerKey.split('_');
+            const boxIndex = parseInt(parts[parts.length - 1], 10);
+            wasCorrect = !isNaN(boxIndex) && prevNum === question.correctAnswers[boxIndex];
+          } else {
+            wasCorrect = question.correctAnswers.includes(prevNum);
+          }
+        } else {
+          wasCorrect = prevNum === question.correctAnswer;
+        }
+      }
       
       // Only play sound if the correctness state changed and sound is enabled
       if (soundEnabled) {
