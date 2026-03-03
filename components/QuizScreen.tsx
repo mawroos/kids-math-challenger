@@ -6,6 +6,19 @@ import { soundEffects } from '../utils/soundEffects';
 import { sessionStorageUtils } from '../utils/sessionStorage';
 import MathRenderer from './MathRenderer';
 
+const psDifficultyLabels: Record<number, { label: string; color: string }> = {
+  1: { label: 'Easy', color: 'text-green-400 bg-green-400/10 border-green-400/30' },
+  2: { label: 'Medium', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' },
+  3: { label: 'Hard', color: 'text-red-400 bg-red-400/10 border-red-400/30' },
+};
+
+const psProblemTypeLabels: Record<string, { label: string; icon: string }> = {
+  'word-problem': { label: 'Word Problem', icon: '📝' },
+  'column-calculation': { label: 'Column Calculation', icon: '🔢' },
+  'money-problem': { label: 'Money Problem', icon: '💷' },
+  'missing-number': { label: 'Missing Number', icon: '❓' },
+};
+
 interface QuizScreenProps {
   questions: Question[];
   onFinishQuiz: (results: QuizResults) => void;
@@ -233,19 +246,8 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                     const isCorrect = isAnswered && userAnswerNum === q.correctAnswer;
                     const options = psShuffledOptions[q.id] || [q.correctAnswer, ...(q.distractorAnswers || [])];
 
-                    const difficultyLabels: Record<number, { label: string; color: string }> = {
-                      1: { label: 'Easy', color: 'text-green-400 bg-green-400/10 border-green-400/30' },
-                      2: { label: 'Medium', color: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/30' },
-                      3: { label: 'Hard', color: 'text-red-400 bg-red-400/10 border-red-400/30' },
-                    };
-                    const problemTypeLabels: Record<string, { label: string; icon: string }> = {
-                      'word-problem': { label: 'Word Problem', icon: '📝' },
-                      'column-calculation': { label: 'Column Calculation', icon: '🔢' },
-                      'money-problem': { label: 'Money Problem', icon: '💷' },
-                      'missing-number': { label: 'Missing Number', icon: '❓' },
-                    };
-                    const diffInfo = q.difficultyLevel ? difficultyLabels[q.difficultyLevel] : null;
-                    const typeInfo = q.problemType ? problemTypeLabels[q.problemType] : null;
+                    const diffInfo = q.difficultyLevel ? psDifficultyLabels[q.difficultyLevel] : null;
+                    const typeInfo = q.problemType ? psProblemTypeLabels[q.problemType] : null;
 
                     const formatPsAnswer = (val: number): string => {
                       if (q.problemType === 'money-problem') return `£${val.toFixed(2)}`;
