@@ -113,15 +113,28 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
     questions.forEach(q => {
       if (q.correctAnswers) {
         total += q.correctAnswers.length;
-        const enteredValues = new Set<number>();
-        q.correctAnswers.forEach((_, idx) => {
-          const key = `${q.id}_${idx}`;
-          const val = parseInt(userAnswers[key], 10);
-          if (!isNaN(val) && q.correctAnswers!.includes(val) && !enteredValues.has(val)) {
-            enteredValues.add(val);
-            score++;
-          }
-        });
+        const hasLabels = q.answerLabels && q.answerLabels.length === q.correctAnswers.length;
+        if (hasLabels) {
+          // Positional matching (expanded notation)
+          q.correctAnswers.forEach((expected, idx) => {
+            const key = `${q.id}_${idx}`;
+            const val = parseInt(userAnswers[key], 10);
+            if (!isNaN(val) && val === expected) {
+              score++;
+            }
+          });
+        } else {
+          // Unordered matching (factors)
+          const enteredValues = new Set<number>();
+          q.correctAnswers.forEach((_, idx) => {
+            const key = `${q.id}_${idx}`;
+            const val = parseInt(userAnswers[key], 10);
+            if (!isNaN(val) && q.correctAnswers!.includes(val) && !enteredValues.has(val)) {
+              enteredValues.add(val);
+              score++;
+            }
+          });
+        }
       } else {
         total++;
         const userAnswer = parseInt(userAnswers[q.id.toString()], 10);
@@ -167,7 +180,9 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {questions.map((q, index) => {
                 if (q.correctAnswers) {
-                    // Multi-answer question (e.g., Factors of 12)
+                    // Multi-answer question (e.g., Factors of 12 or Expanded Notation)
+                    const hasLabels = q.answerLabels && q.answerLabels.length === q.correctAnswers.length;
+                    
                     const enteredValues: number[] = [];
                     q.correctAnswers.forEach((_, idx) => {
                         const key = `${q.id}_${idx}`;
@@ -179,8 +194,19 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                         const key = `${q.id}_${idx}`;
                         return userAnswers[key] !== undefined && userAnswers[key] !== '';
                     });
-                    const uniqueCorrect = new Set(enteredValues.filter(v => q.correctAnswers!.includes(v)));
-                    const allCorrect = allBoxesFilled && uniqueCorrect.size === q.correctAnswers.length;
+                    
+                    let allCorrect: boolean;
+                    if (hasLabels) {
+                        // Positional matching (expanded notation): each box must match its exact answer
+                        allCorrect = allBoxesFilled && q.correctAnswers.every((expected, idx) => {
+                            const key = `${q.id}_${idx}`;
+                            return parseInt(userAnswers[key], 10) === expected;
+                        });
+                    } else {
+                        // Unordered matching (factors): any valid factor in any box
+                        const uniqueCorrect = new Set(enteredValues.filter(v => q.correctAnswers!.includes(v)));
+                        allCorrect = allBoxesFilled && uniqueCorrect.size === q.correctAnswers.length;
+                    }
 
                     let borderColor = 'border-slate-700';
                     if (allBoxesFilled) {
@@ -192,31 +218,46 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                             <div className="text-xl font-semibold text-slate-100 mb-4 text-center leading-relaxed">
                                 <span>{q.text}</span>
                             </div>
-                            <div className="flex flex-wrap justify-center gap-3">
-                                {q.correctAnswers.map((_, idx) => {
+                            <div className="flex flex-wrap justify-center gap-3 items-end">
+                                {q.correctAnswers.map((expectedVal, idx) => {
                                     const key = `${q.id}_${idx}`;
                                     const boxValue = userAnswers[key] || '';
                                     const boxNum = parseInt(boxValue, 10);
                                     const boxAnswered = boxValue !== '';
-                                    // Check if a previous box already has the same value
-                                    let isDuplicate = false;
-                                    if (boxAnswered && !isNaN(boxNum)) {
-                                        for (let j = 0; j < idx; j++) {
-                                            const prevVal = parseInt(userAnswers[`${q.id}_${j}`] || '', 10);
-                                            if (prevVal === boxNum) { isDuplicate = true; break; }
+                                    
+                                    let boxCorrect: boolean;
+                                    if (hasLabels) {
+                                        // Positional: must match exact expected value
+                                        boxCorrect = boxAnswered && !isNaN(boxNum) && boxNum === expectedVal;
+                                    } else {
+                                        // Unordered: check for duplicates
+                                        let isDuplicate = false;
+                                        if (boxAnswered && !isNaN(boxNum)) {
+                                            for (let j = 0; j < idx; j++) {
+                                                const prevVal = parseInt(userAnswers[`${q.id}_${j}`] || '', 10);
+                                                if (prevVal === boxNum) { isDuplicate = true; break; }
+                                            }
                                         }
+                                        boxCorrect = boxAnswered && !isNaN(boxNum) && q.correctAnswers!.includes(boxNum) && !isDuplicate;
                                     }
-                                    const boxCorrect = boxAnswered && !isNaN(boxNum) && q.correctAnswers!.includes(boxNum) && !isDuplicate;
 
                                     return (
                                         <div key={idx} className="flex items-center space-x-1">
-                                            <input
-                                                type="number"
-                                                value={boxValue}
-                                                onChange={(e) => handleAnswerChange(key, e.target.value, q)}
-                                                className="w-20 bg-slate-700 border border-slate-500 rounded-md px-2 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400"
-                                                placeholder="?"
-                                            />
+                                            {hasLabels && idx > 0 && (
+                                                <span className="text-slate-400 text-lg font-bold mr-1">+</span>
+                                            )}
+                                            <div className="flex flex-col items-center">
+                                                <input
+                                                    type="number"
+                                                    value={boxValue}
+                                                    onChange={(e) => handleAnswerChange(key, e.target.value, q)}
+                                                    className="w-16 bg-slate-700 border border-slate-500 rounded-md px-2 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400"
+                                                    placeholder="?"
+                                                />
+                                                {hasLabels && (
+                                                    <span className="text-xs text-slate-400 mt-1">{q.answerLabels![idx]}</span>
+                                                )}
+                                            </div>
                                             <div className="w-6 h-6 flex items-center justify-center">
                                                 {boxAnswered && (boxCorrect ? <CheckIcon /> : <XIcon />)}
                                             </div>

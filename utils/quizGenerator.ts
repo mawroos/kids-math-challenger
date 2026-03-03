@@ -70,6 +70,8 @@ export function generateQuestions(settings: QuizSettings): Question[] {
     let num1 = getRandomInt(currentLowerBound1, currentUpperBound1);
     let num2 = getRandomInt(currentLowerBound2, currentUpperBound2);
     let factorsTarget = 0;
+    let expandedDigits: number[] = [];
+    let expandedLabels: string[] = [];
 
     switch (operation) {
       case Operation.Addition:
@@ -363,11 +365,64 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         correctAnswer = 0;
         break;
       }
+      case Operation.ExpandedNotation: {
+        // Generate a number and ask the user to break it down into place values
+        // num1 controls the whole number part range, num2 controls decimal places (0=none, 1=tenths, 2=hundredths)
+        const wholeNumber = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
+        const decimalPlaces = Math.min(2, Math.max(0, currentLowerBound2));
+        
+        let fullNumber = wholeNumber;
+        let tenthsDigit = 0;
+        let hundredthsDigit = 0;
+        
+        if (decimalPlaces >= 1) {
+          tenthsDigit = getRandomInt(0, 9);
+          fullNumber = wholeNumber + tenthsDigit / 10;
+        }
+        if (decimalPlaces >= 2) {
+          hundredthsDigit = getRandomInt(0, 9);
+          fullNumber = wholeNumber + tenthsDigit / 10 + hundredthsDigit / 100;
+        }
+        
+        // Format the display number
+        const displayNumber = decimalPlaces === 0
+          ? wholeNumber.toLocaleString()
+          : fullNumber.toLocaleString(undefined, { minimumFractionDigits: decimalPlaces, maximumFractionDigits: decimalPlaces });
+        
+        text = `Break down ${displayNumber}`;
+        correctAnswer = 0;
+        
+        // Build place values from the whole number digits
+        const wholeStr = wholeNumber.toString();
+        expandedDigits = [];
+        expandedLabels = [];
+        
+        for (let d = 0; d < wholeStr.length; d++) {
+          const placeValue = Math.pow(10, wholeStr.length - 1 - d);
+          expandedDigits.push(parseInt(wholeStr[d], 10));
+          expandedLabels.push(`× ${placeValue.toLocaleString()}`);
+        }
+        
+        if (decimalPlaces >= 1) {
+          expandedDigits.push(tenthsDigit);
+          expandedLabels.push('× 0.1');
+        }
+        if (decimalPlaces >= 2) {
+          expandedDigits.push(hundredthsDigit);
+          expandedLabels.push('× 0.01');
+        }
+        
+        break;
+      }
     }
     
     const question: Question = { id: i, text, correctAnswer };
     if (operation === Operation.FactorsOf12) {
       question.correctAnswers = getFactors(factorsTarget).sort((a, b) => a - b);
+    }
+    if (operation === Operation.ExpandedNotation) {
+      question.correctAnswers = expandedDigits;
+      question.answerLabels = expandedLabels;
     }
     questions.push(question);
   }

@@ -71,6 +71,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
     [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
     [Operation.FactorsOf12]: { lowerBound1: 1, upperBound1: 12, lowerBound2: 1, upperBound2: 12 },
+    [Operation.ExpandedNotation]: { lowerBound1: 100, upperBound1: 99999, lowerBound2: 0, upperBound2: 2 },
   });
 
   const handleClearSession = () => {
@@ -111,6 +112,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       case Operation.DecimalRepresentation: return 'Decimals & Fractions';
       case Operation.FractionToOne: return 'Fractions to 1';
       case Operation.FactorsOf12: return 'Find Factors';
+      case Operation.ExpandedNotation: return 'Expanded Notation';
       default: return '';
     }
   };
@@ -575,6 +577,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
             <OperationButton op={Operation.GroupingToTarget} label="Grouping" icon="🎯" selected={selectedOps.includes(Operation.GroupingToTarget)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.GroupingByTensHundreds} label="10s/100s" icon="💯" selected={selectedOps.includes(Operation.GroupingByTensHundreds)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.FactorsOf12} label="Factors" icon="🔢" selected={selectedOps.includes(Operation.FactorsOf12)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.ExpandedNotation} label="Expanded" icon="🔣" selected={selectedOps.includes(Operation.ExpandedNotation)} onClick={handleOperationToggle} />
           </div>
           {selectedOps.includes(Operation.FractionEquivalents) && (
             <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
@@ -675,6 +678,15 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
               </p>
             </div>
           )}
+          {selectedOps.includes(Operation.ExpandedNotation) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-emerald-400">Expanded Notation:</span> Break a number down into its place values.
+                <br />
+                <span className="text-slate-400 text-xs">Example: 50,284 → [5] × 10,000 + [0] × 1,000 + [2] × 100 + [8] × 10 + [4] × 1</span>
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Problem Solving Section */}
@@ -772,7 +784,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.GroupingToTarget ? 'Target Value (Lower)' : 
                          op === Operation.GroupingByTensHundreds ? 'For 100 (10s Lower)' :
-                         op === Operation.FactorsOf12 ? 'Number Range (From)' : 'First Number (Lower)'}
+                         op === Operation.FactorsOf12 ? 'Number Range (From)' :
+                         op === Operation.ExpandedNotation ? 'Number Range (From)' : 'First Number (Lower)'}
                       </label>
                       <input
                         type="number"
@@ -786,7 +799,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.GroupingToTarget ? 'Target Value (Upper)' : 
                          op === Operation.GroupingByTensHundreds ? 'For 100 (10s Upper)' :
-                         op === Operation.FactorsOf12 ? 'Number Range (To)' : 'First Number (Upper)'}
+                         op === Operation.FactorsOf12 ? 'Number Range (To)' :
+                         op === Operation.ExpandedNotation ? 'Number Range (To)' : 'First Number (Upper)'}
                       </label>
                       <input
                         type="number"
@@ -800,7 +814,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.FractionEquivalents ? 'Multiplier (Lower)' : 
                          op === Operation.GroupingToTarget ? 'Known Number (Lower)' :
-                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Lower)' : 'Second Number (Lower)'}
+                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Lower)' :
+                         op === Operation.ExpandedNotation ? 'Decimal Places (0-2)' : 'Second Number (Lower)'}
                       </label>
                       <input
                         type="number"
@@ -814,7 +829,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         {op === Operation.FractionEquivalents ? 'Denominator (Upper)' : 
                          op === Operation.GroupingToTarget ? 'Known Number (Upper)' :
-                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Upper)' : 'Second Number (Upper)'}
+                         op === Operation.GroupingByTensHundreds ? 'For 1000 (100s Upper)' :
+                         op === Operation.ExpandedNotation ? '(unused)' : 'Second Number (Upper)'}
                       </label>
                       <input
                         type="number"

@@ -14,6 +14,7 @@ export enum Operation {
   DecimalRepresentation = 'decimal-representation',
   FractionToOne = 'fraction-to-one',
   FactorsOf12 = 'factors-of-12',
+  ExpandedNotation = 'expanded-notation',
 }
 
 export interface OperationRanges {
@@ -32,6 +33,7 @@ export interface OperationRanges {
   [Operation.DecimalRepresentation]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.FractionToOne]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.FactorsOf12]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.ExpandedNotation]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
 }
 
 export interface QuizSettings {
@@ -58,6 +60,7 @@ export interface Question {
     denominator: number;
   };
   correctAnswers?: number[];
+  answerLabels?: string[];
 }
 
 export interface QuizResults {
