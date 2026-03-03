@@ -261,11 +261,16 @@ const App: React.FC = () => {
     setProblemSolvingSettings(null);
     setProblemSolvingQuestions([]);
     setProblemSolvingResults(null);
-    setQuestions([]);
-    setQuizResults(null);
-    setQuizSettings(null);
-    setAppState(AppState.SETUP);
-  }, []);
+    // If there are math quiz results, show them instead of going back to setup
+    if (quizResults) {
+      setAppState(AppState.RESULTS);
+    } else {
+      setQuestions([]);
+      setQuizResults(null);
+      setQuizSettings(null);
+      setAppState(AppState.SETUP);
+    }
+  }, [quizResults]);
 
   const handleLoadSession = useCallback((sessionId: string) => {
     const session = sessionStorageUtils.loadSessionById(sessionId);
