@@ -414,6 +414,39 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         
         break;
       }
+      case Operation.RoundingNumbers: {
+        // Generate a number and ask the user to round it to a randomly chosen place value
+        // lowerBound1/upperBound1 control the number range
+        // lowerBound2 controls the minimum rounding place (power of 10: 1=tens, 2=hundreds, 3=thousands)
+        // upperBound2 controls the maximum rounding place
+        const number = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
+        
+        // Determine valid rounding places based on the number's magnitude
+        const numDigits = number.toString().length;
+        const minPlace = Math.max(1, Math.min(currentLowerBound2, numDigits - 1));
+        const maxPlace = Math.min(currentUpperBound2, numDigits - 1);
+        
+        // Pick a random rounding place (as a power of 10)
+        const roundingPower = getRandomInt(minPlace, Math.max(minPlace, maxPlace));
+        const roundingValue = Math.pow(10, roundingPower);
+        
+        // Round the number
+        const rounded = Math.round(number / roundingValue) * roundingValue;
+        
+        // Format the place name
+        const placeNames: Record<number, string> = {
+          1: 'ten',
+          2: 'hundred',
+          3: 'thousand',
+          4: 'ten thousand',
+          5: 'hundred thousand',
+        };
+        const placeName = placeNames[roundingPower] || roundingValue.toLocaleString();
+        
+        text = `Round ${number.toLocaleString()} to the nearest ${placeName}`;
+        correctAnswer = rounded;
+        break;
+      }
     }
     
     const question: Question = { id: i, text, correctAnswer };
