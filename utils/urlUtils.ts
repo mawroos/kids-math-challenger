@@ -143,7 +143,7 @@ export const urlUtils = {
       // Decode operations from bitmap
       const operationsBits = urlUtils.decodeNumber(parts[index++]);
       const operations: Operation[] = [];
-      for (let bit = 0; bit < 17; bit++) {
+      for (let bit = 0; bit <= Math.max(...Object.values(OPERATION_BITS)); bit++) {
         if (operationsBits & (1 << bit)) {
           const op = BITS_TO_OPERATION[bit];
           if (op) operations.push(op as Operation);
@@ -193,7 +193,7 @@ export const urlUtils = {
           const problemTypeBits = urlUtils.decodeNumber(parts[index++]);
           psNumQuestions = Math.max(1, Math.min(500, urlUtils.decodeNumber(parts[index++])));
           problemTypes = [];
-          for (let bit = 0; bit < 8; bit++) {
+          for (let bit = 0; bit < Object.keys(PROBLEM_TYPE_BITS).length; bit++) {
             if (problemTypeBits & (1 << bit)) {
               const pt = BITS_TO_PROBLEM_TYPE[bit];
               if (pt) problemTypes.push(pt as ProblemType);
