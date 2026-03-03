@@ -137,16 +137,32 @@ const App: React.FC = () => {
 
   const handleStartQuiz = useCallback((settings: QuizSettings) => {
     setQuizSettings(settings);
-    setQuestions(generateQuestions(settings));
-    setAppState(AppState.QUIZ);
     
-    // Track quiz start
-    analytics.trackQuizStart('math', settings.numQuestions);
+    // Generate problem solving questions if problem types are selected
+    if (settings.problemTypes && settings.problemTypes.length > 0) {
+      const psSettings: ProblemSolvingSettings = {
+        numQuestions: settings.psNumQuestions || 10,
+        problemTypes: settings.problemTypes,
+        soundEnabled: settings.soundEnabled,
+      };
+      setProblemSolvingSettings(psSettings);
+      setProblemSolvingQuestions(generateProblemSolvingQuestions(psSettings));
+    }
+    
+    // If math operations are selected, start with the math quiz
+    if (settings.operations.length > 0) {
+      setQuestions(generateQuestions(settings));
+      setAppState(AppState.QUIZ);
+      analytics.trackQuizStart('math', settings.numQuestions);
+    } else {
+      // Only problem solving selected, go straight to problem solving
+      setAppState(AppState.PROBLEM_SOLVING);
+      analytics.trackQuizStart('problem-solving', settings.psNumQuestions || 10);
+    }
   }, []);
 
   const handleFinishQuiz = useCallback((results: QuizResults) => {
     setQuizResults(results);
-    setAppState(AppState.RESULTS);
     
     // Track quiz completion
     analytics.trackQuizComplete('math', results.score, results.total, results.time);
@@ -155,7 +171,15 @@ const App: React.FC = () => {
     if (quizSettings) {
       sessionStorageUtils.saveCompletedSession(questions, results, quizSettings);
     }
-  }, [questions, quizSettings]);
+    
+    // If there are problem solving questions, transition to problem solving next
+    if (problemSolvingQuestions.length > 0) {
+      setAppState(AppState.PROBLEM_SOLVING);
+      analytics.trackQuizStart('problem-solving', problemSolvingQuestions.length);
+    } else {
+      setAppState(AppState.RESULTS);
+    }
+  }, [questions, quizSettings, problemSolvingQuestions]);
 
   const handleCancelQuiz = useCallback(() => {
     // Save incomplete session to history before clearing
@@ -225,15 +249,21 @@ const App: React.FC = () => {
 
   const handleFinishProblemSolving = useCallback((results: ProblemSolvingResults) => {
     setProblemSolvingResults(results);
-    setAppState(AppState.PROBLEM_SOLVING_RESULTS);
     
     analytics.trackQuizComplete('problem-solving', results.score, results.total, results.time);
+    
+    // If there were also math quiz results, go to problem solving results
+    // (the user already saw the math quiz, now showing PS results)
+    setAppState(AppState.PROBLEM_SOLVING_RESULTS);
   }, []);
 
   const handleCancelProblemSolving = useCallback(() => {
     setProblemSolvingSettings(null);
     setProblemSolvingQuestions([]);
     setProblemSolvingResults(null);
+    setQuestions([]);
+    setQuizResults(null);
+    setQuizSettings(null);
     setAppState(AppState.SETUP);
   }, []);
 
@@ -287,7 +317,7 @@ const App: React.FC = () => {
         return <ProblemSolvingResultsScreen results={problemSolvingResults!} onRestart={handleRestart} soundEnabled={problemSolvingSettings?.soundEnabled ?? true} />;
       case AppState.SETUP:
       default:
-        return <SetupScreen onStartQuiz={handleStartQuiz} onStartWritingChallenge={handleStartWritingChallenge} onStartProblemSolving={handleStartProblemSolving} onLoadSession={handleLoadSession} />;
+        return <SetupScreen onStartQuiz={handleStartQuiz} onStartWritingChallenge={handleStartWritingChallenge} onLoadSession={handleLoadSession} />;
     }
   };
 

@@ -44,6 +44,8 @@ export interface QuizSettings {
   soundEnabled?: boolean;
   customMode?: boolean;
   operationRanges?: Partial<OperationRanges>;
+  problemTypes?: ProblemType[];
+  psNumQuestions?: number;
 }
 
 export interface Question {
