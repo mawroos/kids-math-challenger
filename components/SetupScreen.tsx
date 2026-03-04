@@ -264,65 +264,19 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       setOperationRanges(settings.operationRanges);
     }
     
-    setError('');
-    // Show a success message
-    const message = '✓ Preset loaded successfully!';
-    setError('');
-    // Could add a success toast here, but for simplicity we'll just clear any errors
-  };
-
-  // Nova's preset: tenths/hundredths as fractions/decimals, add/subtract whole numbers and decimals, multiply/divide 2-3 digit numbers
-  const loadNovaPreset = () => {
-    setCustomMode(true);
-    setSelectedOps([
-      Operation.DecimalRepresentation,  // Tenths/hundredths as fractions and decimals
-      Operation.DecimalAddition,         // Add decimals
-      Operation.DecimalSubtraction,      // Subtract decimals
-      Operation.Addition,                // Add whole numbers
-      Operation.Subtraction,             // Subtract whole numbers
-      Operation.Multiplication,          // Multiply 2-3 digit numbers
-      Operation.Division,                // Divide 2-3 digit numbers
-    ]);
-    setNumQuestions(20);
-    setSoundEnabled(true);
+    if (settings.problemTypes && settings.problemTypes.length > 0) {
+      setSelectedProblemTypes(settings.problemTypes);
+      setPsNumQuestions(settings.psNumQuestions ?? 10);
+    } else {
+      setSelectedProblemTypes([]);
+    }
     
-    // Set appropriate ranges for Nova's selected operations
-    setOperationRanges(prev => ({
-      ...prev,
-      [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
-      [Operation.DecimalAddition]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
-      [Operation.DecimalSubtraction]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
-      [Operation.Addition]: { lowerBound1: 10, upperBound1: 999, lowerBound2: 10, upperBound2: 999 },
-      [Operation.Subtraction]: { lowerBound1: 10, upperBound1: 999, lowerBound2: 10, upperBound2: 999 },
-      [Operation.Multiplication]: { lowerBound1: 10, upperBound1: 999, lowerBound2: 10, upperBound2: 99 },
-      [Operation.Division]: { lowerBound1: 100, upperBound1: 999, lowerBound2: 10, upperBound2: 99 },
-    }));
     setError('');
   };
 
-  // Sam's preset: fraction add/subtract to 1, multiplication/division facts, numbers up to 10,000
-  const loadSamPreset = () => {
-    setCustomMode(true);
-    setSelectedOps([
-      Operation.FractionToOne,           // Add/subtract fractions to make 1 whole
-      Operation.Multiplication,          // Multiplication facts (speed recall)
-      Operation.Division,                // Division facts (speed recall)
-      Operation.Addition,                // Problems up to 10,000
-      Operation.Subtraction,             // Problems up to 10,000
-    ]);
-    setNumQuestions(20);
-    setSoundEnabled(true);
-    
-    // Set appropriate ranges for Sam's selected operations
-    setOperationRanges(prev => ({
-      ...prev,
-      [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
-      [Operation.Multiplication]: { lowerBound1: 2, upperBound1: 12, lowerBound2: 2, upperBound2: 12 },
-      [Operation.Division]: { lowerBound1: 4, upperBound1: 144, lowerBound2: 2, upperBound2: 12 },
-      [Operation.Addition]: { lowerBound1: 100, upperBound1: 10000, lowerBound2: 100, upperBound2: 10000 },
-      [Operation.Subtraction]: { lowerBound1: 100, upperBound1: 10000, lowerBound2: 100, upperBound2: 10000 },
-    }));
-    setError('');
+  // Samo & Nova combined preset
+  const loadSamoNovaPreset = () => {
+    loadPreset('https://mawroos.github.io/kids-math-challenger/?q=z0l_O_a_k_b_k_b_b_a_cLs_Aa3_cLs_Aa3_b_cLs_Aa3_cLs_Aa3_c_l_ec_bM_m4_k_k_Y_k_Y_q_k_Aa3_b_d_p_qi_Aa3_b_c_b_p_k');
   };
 
   const handleStartWritingChallenge = () => {
@@ -475,24 +429,15 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
         <div className="flex justify-center gap-4 flex-wrap">
           <button
             type="button"
-            onClick={loadSamPreset}
-            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
+            onClick={loadSamoNovaPreset}
+            className="bg-gradient-to-r from-blue-600 to-pink-600 hover:from-blue-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
           >
-            <span className="text-xl">🧒</span>
-            <span>Sam</span>
-          </button>
-          <button
-            type="button"
-            onClick={loadNovaPreset}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center gap-2"
-          >
-            <span className="text-xl">👧</span>
-            <span>Nova</span>
+            <span className="text-xl">🧒👧</span>
+            <span>Samo &amp; Nova</span>
           </button>
         </div>
         <div className="mt-4 text-xs text-slate-400 text-center">
-          <p><strong>Sam:</strong> Fractions to 1, multiplication/division facts, numbers up to 10,000</p>
-          <p><strong>Nova:</strong> Decimals (tenths/hundredths), add/subtract decimals, multiply/divide 2-3 digit numbers</p>
+          <p><strong>Samo &amp; Nova:</strong> Addition, subtraction, multiplication, factors, expanded notation, rounding + problem solving</p>
         </div>
       </div>
       )}
