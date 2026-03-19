@@ -276,7 +276,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
 
   // Samo & Nova combined preset
   const loadSamoNovaPreset = () => {
-    loadPreset('https://mawroos.github.io/kids-math-challenger/?q=z0l_O_a_k_b_k_b_b_a_cLs_Aa3_cLs_Aa3_b_cLs_Aa3_cLs_Aa3_c_l_ec_bM_m4_k_k_Y_k_Y_q_k_Aa3_b_d_p_qi_Aa3_b_c_b_p_k');
+    loadPreset('https://mawroos.github.io/kids-math-challenger/?q=z0l_O_a_k_b_k_b_b_a_cLs_Aa3_cLs_Aa3_b_cLs_Aa3_cLs_Aa3_c_u_bH_u_bH_k_k_Y_k_Y_q_k_Aa3_b_d_p_qi_Aa3_b_c_b_p_k');
   };
 
   const handleStartWritingChallenge = () => {
