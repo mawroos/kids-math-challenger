@@ -51,7 +51,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
   const [psShowHint, setPsShowHint] = useState<Record<number, boolean>>({});
   const [psShowSteps, setPsShowSteps] = useState<Record<number, boolean>>({});
   const [failedAttempts, setFailedAttempts] = useState<Record<string, number>>({});
-  const [lastCountedValue, setLastCountedValue] = useState<Record<string, string>>({});
+  const [submittedAnswers, setSubmittedAnswers] = useState<Record<string, boolean>>({});
 
   // Pre-shuffle multiple-choice options for problem-solving questions (stable across re-renders)
   const psShuffledOptions = useMemo(() => {
@@ -107,97 +107,94 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
   }, []);
 
   const handleAnswerChange = (answerKey: string, value: string, question: Question) => {
-    // Get the previous answer state
-    const previousAnswer = userAnswers[answerKey];
-    
     setUserAnswers((prev) => ({ ...prev, [answerKey]: value }));
-    
-    // Play sound effects based on answer correctness
-    if (question && value !== '' && !isNaN(parseInt(value, 10))) {
-      const numericValue = parseInt(value, 10);
-      let isCorrect: boolean;
-      if (question.correctAnswers) {
-        const hasLabels = question.answerLabels && question.answerLabels.length === question.correctAnswers.length;
-        if (hasLabels) {
-          // Positional matching (expanded notation): extract box index from key
-          const parts = answerKey.split('_');
-          const boxIndex = parseInt(parts[parts.length - 1], 10);
-          isCorrect = !isNaN(boxIndex) && numericValue === question.correctAnswers[boxIndex];
-        } else {
-          // Unordered matching (factors)
-          isCorrect = question.correctAnswers.includes(numericValue);
-        }
-      } else {
-        isCorrect = numericValue === question.correctAnswer;
-      }
-      const wasCorrectPrev = previousAnswer !== undefined && 
-                        previousAnswer !== '' && 
-                        !isNaN(parseInt(previousAnswer, 10));
-      let wasCorrect = false;
-      if (wasCorrectPrev) {
-        const prevNum = parseInt(previousAnswer, 10);
-        if (question.correctAnswers) {
-          const hasLabels = question.answerLabels && question.answerLabels.length === question.correctAnswers.length;
-          if (hasLabels) {
-            const parts = answerKey.split('_');
-            const boxIndex = parseInt(parts[parts.length - 1], 10);
-            wasCorrect = !isNaN(boxIndex) && prevNum === question.correctAnswers[boxIndex];
-          } else {
-            wasCorrect = question.correctAnswers.includes(prevNum);
-          }
-        } else {
-          wasCorrect = prevNum === question.correctAnswer;
-        }
-      }
-      
-      // Only play sound if the correctness state changed and sound is enabled
-      if (soundEnabled) {
-        if (isCorrect && !wasCorrect) {
-          soundEffects.playCorrectSound();
-        } else if (!isCorrect && (wasCorrect || previousAnswer === undefined || previousAnswer === '')) {
-          soundEffects.playIncorrectSound();
-        }
-      }
 
-      // Show hint for problem-solving questions answered incorrectly
-      if (question.isProblemSolving && !isCorrect) {
-        setPsShowHint(prev => ({ ...prev, [question.id]: true }));
+    if (question.isProblemSolving) {
+      // Multiple-choice PS questions: clicking an option IS the submission, so keep immediate feedback.
+      if (value !== '' && !isNaN(parseInt(value, 10))) {
+        const numericValue = parseInt(value, 10);
+        const isCorrect = numericValue === question.correctAnswer;
+        if (soundEnabled) {
+          if (isCorrect) soundEffects.playCorrectSound();
+          else soundEffects.playIncorrectSound();
+        }
+        if (!isCorrect) {
+          setPsShowHint(prev => ({ ...prev, [question.id]: true }));
+        }
       }
+    } else {
+      // For typed inputs, clear the submission state so the check button becomes active again.
+      const qKey = question.id.toString();
+      setSubmittedAnswers(prev => {
+        if (!prev[qKey]) return prev;
+        const next = { ...prev };
+        delete next[qKey];
+        return next;
+      });
     }
   };
 
-  const handleAnswerBlur = useCallback((answerKey: string, question: Question) => {
-    const value = userAnswers[answerKey];
-    if (!value || value === '') return;
+  const handleCheckAnswer = useCallback((question: Question) => {
+    const qKey = question.id.toString();
 
-    // Already at the attempt limit — nothing to do
-    if ((failedAttempts[answerKey] || 0) >= MAX_FAILED_ATTEMPTS) return;
-
-    // Don't re-count the same wrong value blurred again without a change
-    if (value === lastCountedValue[answerKey]) return;
-
-    const numericValue = parseInt(value, 10);
-    if (isNaN(numericValue)) return;
-
-    let isCorrect: boolean;
     if (question.correctAnswers) {
+      // Multi-answer question: evaluate every box and increment failedAttempts for wrong ones.
       const hasLabels = question.answerLabels && question.answerLabels.length === question.correctAnswers.length;
-      if (hasLabels) {
-        const parts = answerKey.split('_');
-        const boxIndex = parseInt(parts[parts.length - 1], 10);
-        isCorrect = !isNaN(boxIndex) && numericValue === question.correctAnswers[boxIndex];
-      } else {
-        isCorrect = question.correctAnswers.includes(numericValue);
+      let anyWrong = false;
+
+      question.correctAnswers.forEach((expectedVal, idx) => {
+        const key = `${question.id}_${idx}`;
+        const value = userAnswers[key];
+        if (!value || value === '') { anyWrong = true; return; }
+
+        const numericValue = parseInt(value, 10);
+        if (isNaN(numericValue)) { anyWrong = true; return; }
+
+        let boxCorrect: boolean;
+        if (hasLabels) {
+          boxCorrect = numericValue === expectedVal;
+        } else {
+          let isDuplicate = false;
+          for (let j = 0; j < idx; j++) {
+            const prevVal = parseInt(userAnswers[`${question.id}_${j}`] || '', 10);
+            if (prevVal === numericValue) { isDuplicate = true; break; }
+          }
+          boxCorrect = question.correctAnswers!.includes(numericValue) && !isDuplicate;
+        }
+
+        if (!boxCorrect) {
+          anyWrong = true;
+          if ((failedAttempts[key] || 0) < MAX_FAILED_ATTEMPTS) {
+            setFailedAttempts(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+          }
+        }
+      });
+
+      setSubmittedAnswers(prev => ({ ...prev, [qKey]: true }));
+      if (soundEnabled) {
+        if (anyWrong) soundEffects.playIncorrectSound();
+        else soundEffects.playCorrectSound();
       }
     } else {
-      isCorrect = numericValue === question.correctAnswer;
-    }
+      // Single-answer question
+      const value = userAnswers[qKey];
+      if (!value || value === '') return;
 
-    if (!isCorrect) {
-      setFailedAttempts(prev => ({ ...prev, [answerKey]: (prev[answerKey] || 0) + 1 }));
-      setLastCountedValue(prev => ({ ...prev, [answerKey]: value }));
+      const numericValue = parseInt(value, 10);
+      if (isNaN(numericValue)) return;
+
+      const isCorrect = numericValue === question.correctAnswer;
+
+      setSubmittedAnswers(prev => ({ ...prev, [qKey]: true }));
+      if (!isCorrect && (failedAttempts[qKey] || 0) < MAX_FAILED_ATTEMPTS) {
+        setFailedAttempts(prev => ({ ...prev, [qKey]: (prev[qKey] || 0) + 1 }));
+      }
+      if (soundEnabled) {
+        if (isCorrect) soundEffects.playCorrectSound();
+        else soundEffects.playIncorrectSound();
+      }
     }
-  }, [userAnswers, lastCountedValue, failedAttempts]);
+  }, [userAnswers, failedAttempts, soundEnabled]);
 
   const finishQuiz = useCallback(() => {
     if (timerRef.current) {
@@ -256,17 +253,40 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
 
   const allAnswered = questions.every(q => {
     if (q.isProblemSolving) {
+      // Multiple-choice: answered as soon as an option is selected.
       const key = q.id.toString();
-      return (userAnswers[key] !== undefined && userAnswers[key] !== '') || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
+      return userAnswers[key] !== undefined && userAnswers[key] !== '';
     }
     if (q.correctAnswers) {
-      return q.correctAnswers.every((_, idx) => {
-        const key = `${q.id}_${idx}`;
-        return (userAnswers[key] !== undefined && userAnswers[key] !== '') || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
-      });
+      const qKey = q.id.toString();
+      const isSubmitted = submittedAnswers[qKey] === true;
+      // All boxes locked by max-failed → done
+      if (q.correctAnswers.every((_, idx) => (failedAttempts[`${q.id}_${idx}`] || 0) >= MAX_FAILED_ATTEMPTS)) return true;
+      if (!isSubmitted) return false;
+      const hasLabels = q.answerLabels && q.answerLabels.length === q.correctAnswers.length;
+      if (hasLabels) {
+        return q.correctAnswers.every((expected, idx) => {
+          const key = `${q.id}_${idx}`;
+          return parseInt(userAnswers[key], 10) === expected;
+        });
+      } else {
+        const enteredValues = new Set<number>();
+        return q.correctAnswers.every((_, idx) => {
+          const key = `${q.id}_${idx}`;
+          const val = parseInt(userAnswers[key], 10);
+          if (!isNaN(val) && q.correctAnswers!.includes(val) && !enteredValues.has(val)) {
+            enteredValues.add(val);
+            return true;
+          }
+          return false;
+        });
+      }
     }
     const key = q.id.toString();
-    return (userAnswers[key] !== undefined && userAnswers[key] !== '') || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
+    const isSubmitted = submittedAnswers[key] === true;
+    const val = parseInt(userAnswers[key], 10);
+    const isCorrect = !isNaN(val) && val === q.correctAnswer;
+    return (isCorrect && isSubmitted) || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
   });
 
   return (
@@ -396,37 +416,48 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
 
                 if (q.correctAnswers) {
                     // Multi-answer question (e.g., Factors of 12 or Expanded Notation)
+                    const qKey = q.id.toString();
+                    const isSubmitted = submittedAnswers[qKey] === true;
                     const hasLabels = q.answerLabels && q.answerLabels.length === q.correctAnswers.length;
-                    
-                    const enteredValues: number[] = [];
-                    q.correctAnswers.forEach((_, idx) => {
-                        const key = `${q.id}_${idx}`;
-                        const val = parseInt(userAnswers[key], 10);
-                        if (!isNaN(val)) enteredValues.push(val);
-                    });
 
-                    const allBoxesFilled = q.correctAnswers.every((_, idx) => {
+                    const someBoxFilled = q.correctAnswers.some((_, idx) => {
                         const key = `${q.id}_${idx}`;
                         return userAnswers[key] !== undefined && userAnswers[key] !== '';
                     });
-                    
-                    let allCorrect: boolean;
-                    if (hasLabels) {
-                        // Positional matching (expanded notation): each box must match its exact answer
-                        allCorrect = allBoxesFilled && q.correctAnswers.every((expected, idx) => {
+
+                    let allCorrect = false;
+                    if (isSubmitted) {
+                        const allBoxesFilled = q.correctAnswers.every((_, idx) => {
                             const key = `${q.id}_${idx}`;
-                            return parseInt(userAnswers[key], 10) === expected;
+                            return userAnswers[key] !== undefined && userAnswers[key] !== '';
                         });
-                    } else {
-                        // Unordered matching (factors): any valid factor in any box
-                        const uniqueCorrect = new Set(enteredValues.filter(v => q.correctAnswers!.includes(v)));
-                        allCorrect = allBoxesFilled && uniqueCorrect.size === q.correctAnswers.length;
+                        if (hasLabels) {
+                            allCorrect = allBoxesFilled && q.correctAnswers.every((expected, idx) => {
+                                const key = `${q.id}_${idx}`;
+                                return parseInt(userAnswers[key], 10) === expected;
+                            });
+                        } else {
+                            const enteredValues: number[] = [];
+                            q.correctAnswers.forEach((_, idx) => {
+                                const key = `${q.id}_${idx}`;
+                                const val = parseInt(userAnswers[key], 10);
+                                if (!isNaN(val)) enteredValues.push(val);
+                            });
+                            const uniqueCorrect = new Set(enteredValues.filter(v => q.correctAnswers!.includes(v)));
+                            allCorrect = allBoxesFilled && uniqueCorrect.size === q.correctAnswers.length;
+                        }
                     }
 
+                    const allBoxesMaxFailed = q.correctAnswers.every((_, idx) =>
+                        (failedAttempts[`${q.id}_${idx}`] || 0) >= MAX_FAILED_ATTEMPTS
+                    );
+
                     let borderColor = 'border-slate-700';
-                    if (allBoxesFilled) {
+                    if (isSubmitted || allBoxesMaxFailed) {
                         borderColor = allCorrect ? 'border-green-500' : 'border-red-500';
                     }
+
+                    const checkBtnDisabled = !someBoxFilled || isSubmitted || allBoxesMaxFailed;
 
                     return (
                         <div key={q.id} className={`bg-slate-800/80 p-5 rounded-lg border-2 ${borderColor} transition-colors duration-300 shadow-lg md:col-span-2`}>
@@ -439,13 +470,11 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                     const boxValue = userAnswers[key] || '';
                                     const boxNum = parseInt(boxValue, 10);
                                     const boxAnswered = boxValue !== '';
-                                    
+
                                     let boxCorrect: boolean;
                                     if (hasLabels) {
-                                        // Positional: must match exact expected value
                                         boxCorrect = boxAnswered && !isNaN(boxNum) && boxNum === expectedVal;
                                     } else {
-                                        // Unordered: check for duplicates
                                         let isDuplicate = false;
                                         if (boxAnswered && !isNaN(boxNum)) {
                                             for (let j = 0; j < idx; j++) {
@@ -456,7 +485,8 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                         boxCorrect = boxAnswered && !isNaN(boxNum) && q.correctAnswers!.includes(boxNum) && !isDuplicate;
                                     }
 
-                                     const isBoxLocked = (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
+                                    const isBoxMaxFailed = (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
+                                    const isBoxLocked = isBoxMaxFailed || (isSubmitted && boxCorrect);
 
                                     return (
                                         <div key={idx} className="flex items-center space-x-1">
@@ -468,7 +498,6 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                                     type="number"
                                                     value={boxValue}
                                                     onChange={(e) => handleAnswerChange(key, e.target.value, q)}
-                                                    onBlur={() => handleAnswerBlur(key, q)}
                                                     disabled={isBoxLocked}
                                                     className={`w-16 bg-slate-700 border border-slate-500 rounded-md px-2 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400 ${isBoxLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                     placeholder="?"
@@ -478,11 +507,21 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                                 )}
                                             </div>
                                             <div className="w-6 h-6 flex items-center justify-center">
-                                                {boxAnswered && (boxCorrect ? <CheckIcon /> : <XIcon />)}
+                                                {(isSubmitted || isBoxMaxFailed) && boxAnswered && (boxCorrect ? <CheckIcon /> : <XIcon />)}
                                             </div>
                                         </div>
                                     );
                                 })}
+                            </div>
+                            <div className="flex justify-center mt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => handleCheckAnswer(q)}
+                                    disabled={checkBtnDisabled}
+                                    className="bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200"
+                                >
+                                    ✓ Check
+                                </button>
                             </div>
                         </div>
                     );
@@ -494,10 +533,13 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                 const userAnswerNum = parseInt(userAnswerStr, 10);
                 const isAnswered = userAnswerStr !== undefined && userAnswerStr !== '';
                 const isCorrect = isAnswered && userAnswerNum === q.correctAnswer;
-                const isLocked = (failedAttempts[answerKey] || 0) >= MAX_FAILED_ATTEMPTS;
-                
+                const isSubmitted = submittedAnswers[answerKey] === true;
+                const isMaxFailed = (failedAttempts[answerKey] || 0) >= MAX_FAILED_ATTEMPTS;
+                const isLocked = isMaxFailed || (isCorrect && isSubmitted);
+                const checkBtnDisabled = !isAnswered || isLocked || isSubmitted;
+
                 let borderColor = 'border-slate-700';
-                if (isAnswered) {
+                if (isSubmitted || isMaxFailed) {
                     borderColor = isCorrect ? 'border-green-500' : 'border-red-500';
                 }
 
@@ -512,17 +554,23 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                         </div>
                         <input
                             type="number"
-                            // FIX: The ref callback should not return a value. Using a block body `{}` ensures the arrow function returns void.
                             ref={el => { inputRefs.current[index] = el; }}
                             value={userAnswerStr || ''}
                             onChange={(e) => handleAnswerChange(answerKey, e.target.value, q)}
-                            onBlur={() => handleAnswerBlur(answerKey, q)}
                             disabled={isLocked}
                             className={`w-28 bg-slate-700 border border-slate-500 rounded-md px-3 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400 ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                             placeholder="?"
                         />
+                        <button
+                            type="button"
+                            onClick={() => handleCheckAnswer(q)}
+                            disabled={checkBtnDisabled}
+                            className="bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200"
+                        >
+                            ✓
+                        </button>
                         <div className="w-7 h-7 flex items-center justify-center">
-                            {isAnswered && (isCorrect ? <CheckIcon /> : <XIcon />)}
+                            {(isSubmitted || isMaxFailed) && isAnswered && (isCorrect ? <CheckIcon /> : <XIcon />)}
                         </div>
                     </div>
                 );
