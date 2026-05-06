@@ -259,7 +259,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
     }
     if (q.correctAnswers) {
       const qKey = q.id.toString();
-      const isSubmitted = submittedAnswers[qKey] === true;
+      const isSubmitted = !!submittedAnswers[qKey];
       // All boxes locked by max-failed → done
       if (q.correctAnswers.every((_, idx) => (failedAttempts[`${q.id}_${idx}`] || 0) >= MAX_FAILED_ATTEMPTS)) return true;
       if (!isSubmitted) return false;
@@ -283,7 +283,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
       }
     }
     const key = q.id.toString();
-    const isSubmitted = submittedAnswers[key] === true;
+    const isSubmitted = !!submittedAnswers[key];
     const val = parseInt(userAnswers[key], 10);
     const isCorrect = !isNaN(val) && val === q.correctAnswer;
     return (isCorrect && isSubmitted) || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
@@ -417,7 +417,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                 if (q.correctAnswers) {
                     // Multi-answer question (e.g., Factors of 12 or Expanded Notation)
                     const qKey = q.id.toString();
-                    const isSubmitted = submittedAnswers[qKey] === true;
+                    const isSubmitted = !!submittedAnswers[qKey];
                     const hasLabels = q.answerLabels && q.answerLabels.length === q.correctAnswers.length;
 
                     const someBoxFilled = q.correctAnswers.some((_, idx) => {
@@ -533,7 +533,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                 const userAnswerNum = parseInt(userAnswerStr, 10);
                 const isAnswered = userAnswerStr !== undefined && userAnswerStr !== '';
                 const isCorrect = isAnswered && userAnswerNum === q.correctAnswer;
-                const isSubmitted = submittedAnswers[answerKey] === true;
+                const isSubmitted = !!submittedAnswers[answerKey];
                 const isMaxFailed = (failedAttempts[answerKey] || 0) >= MAX_FAILED_ATTEMPTS;
                 const isLocked = isMaxFailed || (isCorrect && isSubmitted);
                 const checkBtnDisabled = !isAnswered || isLocked || isSubmitted;
