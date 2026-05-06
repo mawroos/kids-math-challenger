@@ -40,6 +40,8 @@ const Timer: React.FC<{ time: number }> = ({ time }) => {
   );
 };
 
+const MAX_FAILED_ATTEMPTS = 2;
+
 const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCancel, soundEnabled }) => {
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [time, setTime] = useState(0);
@@ -48,6 +50,8 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [psShowHint, setPsShowHint] = useState<Record<number, boolean>>({});
   const [psShowSteps, setPsShowSteps] = useState<Record<number, boolean>>({});
+  const [failedAttempts, setFailedAttempts] = useState<Record<string, number>>({});
+  const [lastCountedValue, setLastCountedValue] = useState<Record<string, string>>({});
 
   // Pre-shuffle multiple-choice options for problem-solving questions (stable across re-renders)
   const psShuffledOptions = useMemo(() => {
@@ -162,6 +166,39 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
     }
   };
 
+  const handleAnswerBlur = useCallback((answerKey: string, question: Question) => {
+    const value = userAnswers[answerKey];
+    if (!value || value === '') return;
+
+    // Already at the attempt limit — nothing to do
+    if ((failedAttempts[answerKey] || 0) >= MAX_FAILED_ATTEMPTS) return;
+
+    // Don't re-count the same wrong value blurred again without a change
+    if (value === lastCountedValue[answerKey]) return;
+
+    const numericValue = parseInt(value, 10);
+    if (isNaN(numericValue)) return;
+
+    let isCorrect: boolean;
+    if (question.correctAnswers) {
+      const hasLabels = question.answerLabels && question.answerLabels.length === question.correctAnswers.length;
+      if (hasLabels) {
+        const parts = answerKey.split('_');
+        const boxIndex = parseInt(parts[parts.length - 1], 10);
+        isCorrect = !isNaN(boxIndex) && numericValue === question.correctAnswers[boxIndex];
+      } else {
+        isCorrect = question.correctAnswers.includes(numericValue);
+      }
+    } else {
+      isCorrect = numericValue === question.correctAnswer;
+    }
+
+    if (!isCorrect) {
+      setFailedAttempts(prev => ({ ...prev, [answerKey]: (prev[answerKey] || 0) + 1 }));
+      setLastCountedValue(prev => ({ ...prev, [answerKey]: value }));
+    }
+  }, [userAnswers, lastCountedValue, failedAttempts]);
+
   const finishQuiz = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -218,14 +255,18 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
   }, [onCancel]);
 
   const allAnswered = questions.every(q => {
+    if (q.isProblemSolving) {
+      const key = q.id.toString();
+      return (userAnswers[key] !== undefined && userAnswers[key] !== '') || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
+    }
     if (q.correctAnswers) {
       return q.correctAnswers.every((_, idx) => {
         const key = `${q.id}_${idx}`;
-        return userAnswers[key] !== undefined && userAnswers[key] !== '';
+        return (userAnswers[key] !== undefined && userAnswers[key] !== '') || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
       });
     }
     const key = q.id.toString();
-    return userAnswers[key] !== undefined && userAnswers[key] !== '';
+    return (userAnswers[key] !== undefined && userAnswers[key] !== '') || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
   });
 
   return (
@@ -415,6 +456,8 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                         boxCorrect = boxAnswered && !isNaN(boxNum) && q.correctAnswers!.includes(boxNum) && !isDuplicate;
                                     }
 
+                                     const isBoxLocked = (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
+
                                     return (
                                         <div key={idx} className="flex items-center space-x-1">
                                             {hasLabels && idx > 0 && (
@@ -425,7 +468,9 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                                     type="number"
                                                     value={boxValue}
                                                     onChange={(e) => handleAnswerChange(key, e.target.value, q)}
-                                                    className="w-16 bg-slate-700 border border-slate-500 rounded-md px-2 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400"
+                                                    onBlur={() => handleAnswerBlur(key, q)}
+                                                    disabled={isBoxLocked}
+                                                    className={`w-16 bg-slate-700 border border-slate-500 rounded-md px-2 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400 ${isBoxLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                     placeholder="?"
                                                 />
                                                 {hasLabels && (
@@ -449,6 +494,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                 const userAnswerNum = parseInt(userAnswerStr, 10);
                 const isAnswered = userAnswerStr !== undefined && userAnswerStr !== '';
                 const isCorrect = isAnswered && userAnswerNum === q.correctAnswer;
+                const isLocked = (failedAttempts[answerKey] || 0) >= MAX_FAILED_ATTEMPTS;
                 
                 let borderColor = 'border-slate-700';
                 if (isAnswered) {
@@ -470,7 +516,9 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                             ref={el => { inputRefs.current[index] = el; }}
                             value={userAnswerStr || ''}
                             onChange={(e) => handleAnswerChange(answerKey, e.target.value, q)}
-                            className="w-28 bg-slate-700 border border-slate-500 rounded-md px-3 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400"
+                            onBlur={() => handleAnswerBlur(answerKey, q)}
+                            disabled={isLocked}
+                            className={`w-28 bg-slate-700 border border-slate-500 rounded-md px-3 py-3 text-white text-lg text-center focus:ring-2 focus:ring-sky-400 focus:border-sky-400 transition placeholder-slate-400 ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                             placeholder="?"
                         />
                         <div className="w-7 h-7 flex items-center justify-center">
