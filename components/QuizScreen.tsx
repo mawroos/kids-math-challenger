@@ -40,7 +40,7 @@ const Timer: React.FC<{ time: number }> = ({ time }) => {
   );
 };
 
-const MAX_FAILED_ATTEMPTS = 2;
+const MAX_FAILED_ATTEMPTS = 4;
 
 const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCancel, soundEnabled }) => {
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
