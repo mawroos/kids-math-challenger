@@ -36,6 +36,7 @@ const OperationButton: React.FC<{
 
 const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingChallenge, onLoadSession }) => {
   const [challengeType, setChallengeType] = useState<ChallengeType>(ChallengeType.MATH);
+  const [playerName, setPlayerName] = useState<string>('');
   const [schoolYear, setSchoolYear] = useState<number>(3);
   const [lowerBound1, setLowerBound1] = useState<number>(0);
   const [upperBound1, setUpperBound1] = useState<number>(10);
@@ -145,6 +146,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
 
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (!playerName.trim()) {
+      setError('Please enter your name before starting.');
+      return;
+    }
     if (selectedOps.length === 0 && selectedProblemTypes.length === 0) {
       setError('Please select at least one operation or problem type.');
       return;
@@ -182,6 +187,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       operationRanges: customMode ? operationRanges : undefined,
       problemTypes: selectedProblemTypes.length > 0 ? selectedProblemTypes : undefined,
       psNumQuestions: selectedProblemTypes.length > 0 ? psNumQuestions : undefined,
+      playerName: playerName.trim() || undefined,
     });
   };
 
@@ -306,10 +312,16 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
   const handleStartWritingChallenge = () => {
     if (!onStartWritingChallenge) return;
     
+    if (!playerName.trim()) {
+      setError('Please enter your name before starting.');
+      return;
+    }
+    
     setError('');
     onStartWritingChallenge({
       schoolYear,
-      challengeType: 'poem'
+      challengeType: 'poem',
+      playerName: playerName.trim(),
     });
   };
 
@@ -346,6 +358,21 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
             Clear Saved Session
           </button>
         </div>
+      </div>
+
+      {/* Player Name */}
+      <div className="mb-6 p-4 bg-slate-800 border-2 border-slate-700 rounded-lg">
+        <label htmlFor="playerName" className="block text-sm font-medium text-slate-300 mb-2">
+          Player Name
+        </label>
+        <input
+          id="playerName"
+          type="text"
+          value={playerName}
+          onChange={(e) => setPlayerName(e.target.value)}
+          placeholder="Enter your name..."
+          className="w-full bg-slate-900 border border-slate-600 rounded-md px-4 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+        />
       </div>
 
       {/* Challenge Type Selector */}
