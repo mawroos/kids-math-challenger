@@ -37,28 +37,43 @@ const OperationButton: React.FC<{
 const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingChallenge, onLoadSession }) => {
   const [challengeType, setChallengeType] = useState<ChallengeType>(ChallengeType.MATH);
   const [schoolYear, setSchoolYear] = useState<number>(3);
-  const [lowerBound1, setLowerBound1] = useState<number>(1);
+  const [lowerBound1, setLowerBound1] = useState<number>(0);
   const [upperBound1, setUpperBound1] = useState<number>(10);
   const [lowerBound2, setLowerBound2] = useState<number>(1);
   const [upperBound2, setUpperBound2] = useState<number>(10);
-  const [numQuestions, setNumQuestions] = useState<number>(10);
-  const [selectedOps, setSelectedOps] = useState<Operation[]>([Operation.Addition, Operation.Subtraction]);
+  const [numQuestions, setNumQuestions] = useState<number>(30);
+  const [selectedOps, setSelectedOps] = useState<Operation[]>([
+    Operation.Addition, 
+    Operation.Subtraction, 
+    Operation.Multiplication, 
+    Operation.FactorsOf12, 
+    Operation.ExpandedNotation, 
+    Operation.RoundingNumbers
+  ]);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [customMode, setCustomMode] = useState<boolean>(false);
+  const [customMode, setCustomMode] = useState<boolean>(true);
   const [shareableUrl, setShareableUrl] = useState<string>('');
   const [showUrlSection, setShowUrlSection] = useState<boolean>(false);
   const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [isSettingsUnlocked, setIsSettingsUnlocked] = useState<boolean>(false);
+  const [passwordInput, setPasswordInput] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<string>('');
   
   // Problem solving state
   const [psNumQuestions, setPsNumQuestions] = useState<number>(10);
-  const [selectedProblemTypes, setSelectedProblemTypes] = useState<ProblemType[]>([]);
+  const [selectedProblemTypes, setSelectedProblemTypes] = useState<ProblemType[]>([
+    'word-problem' as ProblemType, 
+    'column-calculation' as ProblemType, 
+    'money-problem' as ProblemType, 
+    'missing-number' as ProblemType
+  ]);
   
   // Initialize operation ranges with default values
   const [operationRanges, setOperationRanges] = useState<Partial<OperationRanges>>({
-    [Operation.Addition]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
-    [Operation.Subtraction]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
-    [Operation.Multiplication]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
+    [Operation.Addition]: { lowerBound1: 10000, upperBound1: 99999, lowerBound2: 10000, upperBound2: 99999 },
+    [Operation.Subtraction]: { lowerBound1: 10000, upperBound1: 99999, lowerBound2: 10000, upperBound2: 99999 },
+    [Operation.Multiplication]: { lowerBound1: 20, upperBound1: 95, lowerBound2: 20, upperBound2: 95 },
     [Operation.Division]: { lowerBound1: 1, upperBound1: 10, lowerBound2: 1, upperBound2: 10 },
     [Operation.FractionEquivalents]: { lowerBound1: 1, upperBound1: 6, lowerBound2: 2, upperBound2: 12 },
     [Operation.FractionAddition]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
@@ -70,10 +85,19 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     [Operation.DecimalSubtraction]: { lowerBound1: 0, upperBound1: 10, lowerBound2: 0, upperBound2: 10 },
     [Operation.DecimalRepresentation]: { lowerBound1: 1, upperBound1: 99, lowerBound2: 10, upperBound2: 100 },
     [Operation.FractionToOne]: { lowerBound1: 1, upperBound1: 8, lowerBound2: 2, upperBound2: 12 },
-    [Operation.FactorsOf12]: { lowerBound1: 1, upperBound1: 12, lowerBound2: 1, upperBound2: 12 },
-    [Operation.ExpandedNotation]: { lowerBound1: 100, upperBound1: 99999, lowerBound2: 0, upperBound2: 2 },
-    [Operation.RoundingNumbers]: { lowerBound1: 10, upperBound1: 99999, lowerBound2: 1, upperBound2: 4 },
+    [Operation.FactorsOf12]: { lowerBound1: 10, upperBound1: 50, lowerBound2: 10, upperBound2: 50 },
+    [Operation.ExpandedNotation]: { lowerBound1: 1000, upperBound1: 99999, lowerBound2: 1, upperBound2: 2 },
+    [Operation.RoundingNumbers]: { lowerBound1: 10, upperBound1: 99999, lowerBound2: 1, upperBound2: 3 },
   });
+
+  const handleUnlock = () => {
+    if (passwordInput === 'M@yanS@moN0va') {
+      setIsSettingsUnlocked(true);
+      setPasswordError('');
+    } else {
+      setPasswordError('Incorrect password');
+    }
+  };
 
   const handleClearSession = () => {
     sessionStorageUtils.clearSession();
@@ -119,8 +143,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (selectedOps.length === 0 && selectedProblemTypes.length === 0) {
       setError('Please select at least one operation or problem type.');
       return;
@@ -419,8 +443,43 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       )}
 
       
+      {/* Settings Lock/Unlock Section */}
+      {challengeType === ChallengeType.MATH && !isSettingsUnlocked && (
+        <div className="mb-6 p-6 bg-slate-800 border-2 border-slate-700 rounded-lg flex flex-col items-center">
+          <p className="text-slate-300 mb-4 text-center font-medium">Settings are locked. Enter password to change settings.</p>
+          <div className="flex gap-2 w-full max-w-sm">
+            <input 
+              type="password" 
+              placeholder="Password" 
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleUnlock(); }}
+              className="flex-1 bg-slate-900 border border-slate-600 rounded-md px-4 py-2 text-white focus:ring-2 focus:ring-sky-500 focus:outline-none"
+            />
+            <button 
+              type="button" 
+              onClick={handleUnlock}
+              className="bg-sky-600 hover:bg-sky-700 text-white px-6 py-2 rounded-md transition-colors font-semibold"
+            >
+              Unlock
+            </button>
+          </div>
+          {passwordError && <p className="text-red-400 mt-3 text-sm">{passwordError}</p>}
+          
+          <div className="mt-8 w-full">
+            <button
+              type="button"
+              onClick={(e) => handleSubmit()}
+              className="w-full bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white font-bold py-5 px-6 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 text-xl"
+            >
+              ▶️ Start Challenge
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Preset Settings Section - Only show for Math */}
-      {challengeType === ChallengeType.MATH && (
+      {challengeType === ChallengeType.MATH && isSettingsUnlocked && (
       <div className="mb-6 p-4 bg-gradient-to-r from-sky-900/30 to-purple-900/30 border-2 border-sky-500/30 rounded-lg">
         <h3 className="text-lg font-semibold text-sky-300 mb-3 text-center">Quick Start Presets</h3>
         <p className="text-sm text-slate-400 mb-4 text-center">
@@ -443,7 +502,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       )}
       
       {/* Math Quiz Setup */}
-      {challengeType === ChallengeType.MATH && (
+      {challengeType === ChallengeType.MATH && isSettingsUnlocked && (
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Global Ranges - only show when custom mode is off */}
         {!customMode && (
