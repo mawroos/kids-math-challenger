@@ -14,6 +14,7 @@ import { generateProblemSolvingQuestions } from './utils/problemSolvingGenerator
 import { sessionStorageUtils } from './utils/sessionStorage';
 import { urlUtils } from './utils/urlUtils';
 import { analytics } from './utils/analytics';
+import { sendTelegramNotification, formatTestResults } from './utils/telegram';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.SETUP);
@@ -197,6 +198,10 @@ const App: React.FC = () => {
     // Track quiz completion
     analytics.trackQuizComplete('math', results.score, results.total, results.time);
     
+    // Send Telegram Notification
+    const message = formatTestResults('Math Quiz', results.score, results.total, results.time, quizSettings?.playerName);
+    sendTelegramNotification(message);
+    
     // Save completed session to history
     if (quizSettings) {
       sessionStorageUtils.saveCompletedSession(questions, results, quizSettings);
@@ -251,6 +256,10 @@ const App: React.FC = () => {
     setWritingResult(result);
     setAppState(AppState.WRITING_RESULTS);
     
+    // Send Telegram Notification
+    const message = formatTestResults('Writing Challenge', result.assessment.score, 100, undefined, writingSettings?.playerName);
+    sendTelegramNotification(message);
+    
     // Track writing challenge completion
     if (writingSettings) {
       analytics.trackWritingChallengeComplete(writingSettings.schoolYear, result.assessment.score);
@@ -276,10 +285,14 @@ const App: React.FC = () => {
     
     analytics.trackQuizComplete('problem-solving', results.score, results.total, results.time);
     
+    // Send Telegram Notification
+    const message = formatTestResults('Problem Solving', results.score, results.total, results.time, problemSolvingSettings?.playerName);
+    sendTelegramNotification(message);
+    
     // If there were also math quiz results, go to problem solving results
     // (the user already saw the math quiz, now showing PS results)
     setAppState(AppState.PROBLEM_SOLVING_RESULTS);
-  }, []);
+  }, [problemSolvingSettings]);
 
   const handleCancelProblemSolving = useCallback(() => {
     setProblemSolvingSettings(null);

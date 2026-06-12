@@ -50,6 +50,7 @@ export interface QuizSettings {
   operationRanges?: Partial<OperationRanges>;
   problemTypes?: ProblemType[];
   psNumQuestions?: number;
+  playerName?: string;
 }
 
 export interface Question {
@@ -95,6 +96,7 @@ export interface ProblemSolvingSettings {
   numQuestions: number;
   problemTypes: ProblemType[];
   soundEnabled?: boolean;
+  playerName?: string;
 }
 
 export interface ProblemSolvingResults {
@@ -122,6 +124,7 @@ export enum ChallengeType {
 export interface WritingChallengeSettings {
   schoolYear: number;
   challengeType: 'poem';
+  playerName?: string;
 }
 
 export interface WritingChallengeResult {
