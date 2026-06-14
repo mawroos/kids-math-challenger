@@ -518,7 +518,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                     type="button"
                                     onClick={() => handleCheckAnswer(q)}
                                     disabled={checkBtnDisabled}
-                                    className="bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200"
+                                    className="bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-6 rounded-lg"
                                 >
                                     ✓ Check
                                 </button>
@@ -565,7 +565,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                             type="button"
                             onClick={() => handleCheckAnswer(q)}
                             disabled={checkBtnDisabled}
-                            className="bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200"
+                            className="bg-sky-600 hover:bg-sky-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg"
                         >
                             ✓
                         </button>
