@@ -1,0 +1,49 @@
+--- components/QuizScreen.tsx
++++ components/QuizScreen.tsx
+@@ -254,39 +254,43 @@
+
+-  const allAnswered = questions.every(q => {
++  const isQuestionAnswered = useCallback((q: Question) => {
+     if (q.isProblemSolving) {
+       // Multiple-choice: answered as soon as an option is selected.
+       const key = q.id.toString();
+       return userAnswers[key] !== undefined && userAnswers[key] !== '';
+     }
+     if (q.correctAnswers) {
+       const qKey = q.id.toString();
+       const isSubmitted = !!submittedAnswers[qKey];
+       // All boxes locked by max-failed → done
+       if (q.correctAnswers.every((_, idx) => (failedAttempts[`${q.id}_${idx}`] || 0) >= MAX_FAILED_ATTEMPTS)) return true;
+       if (!isSubmitted) return false;
+       const hasLabels = q.answerLabels && q.answerLabels.length === q.correctAnswers.length;
+       if (hasLabels) {
+         return q.correctAnswers.every((expected, idx) => {
+           const key = `${q.id}_${idx}`;
+           return parseInt(userAnswers[key], 10) === expected;
+         });
+       } else {
+         const enteredValues = new Set<number>();
+         return q.correctAnswers.every((_, idx) => {
+           const key = `${q.id}_${idx}`;
+           const val = parseInt(userAnswers[key], 10);
+           if (!isNaN(val) && q.correctAnswers!.includes(val) && !enteredValues.has(val)) {
+             enteredValues.add(val);
+             return true;
+           }
+           return false;
+         });
+       }
+     }
+     const key = q.id.toString();
+     const isSubmitted = !!submittedAnswers[key];
+     const val = parseInt(userAnswers[key], 10);
+     const isCorrect = !isNaN(val) && val === q.correctAnswer;
+     return (isCorrect && isSubmitted) || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
+-  });
++  }, [userAnswers, submittedAnswers, failedAttempts]);
++
++  const allAnswered = useMemo(() => {
++    return questions.every(isQuestionAnswered);
++  }, [questions, isQuestionAnswered]);
+
+   const handleAnswerChange = (questionIdStr: string, value: string, question: Question) => {

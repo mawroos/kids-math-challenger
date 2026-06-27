@@ -236,12 +236,12 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
         }
       }
     });
-    
+
     // Play celebration sound when quiz is completed (if sound is enabled)
     if (soundEnabled) {
       soundEffects.playCelebrationSound();
     }
-    
+
     onFinishQuiz({ score, total, time });
   }, [questions, userAnswers, time, onFinishQuiz, soundEnabled]);
 
@@ -252,7 +252,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
     onCancel();
   }, [onCancel]);
 
-  const isQuestionAnswered = useCallback((q: Question) => {
+  const allAnswered = questions.every(q => {
     if (q.isProblemSolving) {
       // Multiple-choice: answered as soon as an option is selected.
       const key = q.id.toString();
@@ -288,11 +288,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
     const val = parseInt(userAnswers[key], 10);
     const isCorrect = !isNaN(val) && val === q.correctAnswer;
     return (isCorrect && isSubmitted) || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
-  }, [userAnswers, submittedAnswers, failedAttempts]);
-
-  const allAnswered = useMemo(() => {
-    return questions.every(isQuestionAnswered);
-  }, [questions, isQuestionAnswered]);
+  });
 
   return (
     <div className="animate-fade-in">

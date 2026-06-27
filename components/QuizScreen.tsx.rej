@@ -1,0 +1,24 @@
+--- components/QuizScreen.tsx
++++ components/QuizScreen.tsx
+@@ -254,18 +254,19 @@
+     onCancel();
+   }, [onCancel]);
+
+-  const allAnswered = questions.every(q => {
++  const isQuestionAnswered = useCallback((q: Question) => {
+     if (q.isProblemSolving) {
+       // Multiple-choice: answered as soon as an option is selected.
+       const key = q.id.toString();
+       return userAnswers[key] !== undefined && userAnswers[key] !== '';
+     }
+
+     if (q.answerType === 'fraction' && q.correctAnswers) {
+       return q.correctAnswers.every((_, idx) => {
+         const val = userAnswers[`${q.id}_${idx}`];
+         return val !== undefined && val !== '';
+       });
+     }
+     return userAnswers[q.id.toString()] !== undefined && userAnswers[q.id.toString()] !== '';
+-  });
++  }, [userAnswers]);
++
