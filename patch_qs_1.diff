@@ -1,0 +1,10 @@
+--- components/QuizScreen.tsx
++++ components/QuizScreen.tsx
+@@ -51,6 +51,7 @@
+   const [psShowSteps, setPsShowSteps] = useState<Record<number, boolean>>({});
+   const [failedAttempts, setFailedAttempts] = useState<Record<string, number>>({});
+   const [submittedAnswers, setSubmittedAnswers] = useState<Record<string, boolean>>({});
++  const [showUnansweredWarning, setShowUnansweredWarning] = useState(false);
+
+   // Pre-shuffle multiple-choice options for problem-solving questions (stable across re-renders)
+   const psShuffledOptions = useMemo(() => {
