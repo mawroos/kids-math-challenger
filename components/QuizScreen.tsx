@@ -246,8 +246,8 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
         if (answerStr === undefined || answerStr === '') {
           missed++;
         } else {
-          const userAnswer = parseInt(answerStr, 10);
-          if (userAnswer === q.correctAnswer) {
+          const userAnswer = parseFloat(answerStr);
+          if (!isNaN(userAnswer) && userAnswer === q.correctAnswer) {
             score++;
           }
         }
