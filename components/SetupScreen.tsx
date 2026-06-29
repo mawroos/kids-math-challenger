@@ -42,14 +42,17 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
   const [upperBound1, setUpperBound1] = useState<number>(10);
   const [lowerBound2, setLowerBound2] = useState<number>(1);
   const [upperBound2, setUpperBound2] = useState<number>(10);
-  const [numQuestions, setNumQuestions] = useState<number>(30);
+  const [numQuestions, setNumQuestions] = useState<number>(40);
   const [selectedOps, setSelectedOps] = useState<Operation[]>([
     Operation.Addition, 
     Operation.Subtraction, 
     Operation.Multiplication, 
     Operation.FactorsOf12, 
     Operation.ExpandedNotation, 
-    Operation.RoundingNumbers
+    Operation.RoundingNumbers,
+    Operation.LengthConversion,
+    Operation.WeightConversion,
+    Operation.TimeConversion
   ]);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
