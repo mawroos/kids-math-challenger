@@ -471,49 +471,42 @@ export function generateQuestions(settings: QuizSettings): Question[] {
       }
       case Operation.LengthConversion: {
         const units = [
-          { from: 'm', to: 'cm', multiplier: 100 },
-          { from: 'cm', to: 'm', multiplier: 0.01 },
-          { from: 'km', to: 'm', multiplier: 1000 },
-          { from: 'm', to: 'km', multiplier: 0.001 }
+          { from: 'm', to: 'cm', multiplier: 100, commonValues: [1, 2, 3, 4, 5, 10, 15, 20, 25, 50] },
+          { from: 'cm', to: 'm', multiplier: 0.01, commonValues: [100, 200, 300, 400, 500, 1000, 150, 250, 350, 1500] },
+          { from: 'km', to: 'm', multiplier: 1000, commonValues: [1, 2, 3, 4, 5, 10, 12, 15, 20, 50] },
+          { from: 'm', to: 'km', multiplier: 0.001, commonValues: [1000, 2000, 3000, 4000, 5000, 10000, 1500, 2500, 3500] }
         ];
         const conversion = units[getRandomInt(0, units.length - 1)];
-        let val = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
-        if (conversion.multiplier < 1) {
-          // If we are dividing, ensure we have a round number that converts cleanly
-          val = val * Math.round(1 / conversion.multiplier);
-        }
+        const val = conversion.commonValues[getRandomInt(0, conversion.commonValues.length - 1)];
+        
         text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
-        correctAnswer = val * conversion.multiplier;
+        correctAnswer = Math.round(val * conversion.multiplier * 1000) / 1000;
         break;
       }
       case Operation.WeightConversion: {
         const units = [
-          { from: 'kg', to: 'g', multiplier: 1000 },
-          { from: 'g', to: 'kg', multiplier: 0.001 }
+          { from: 'kg', to: 'g', multiplier: 1000, commonValues: [1, 2, 3, 4, 5, 10, 12, 15, 20, 50] },
+          { from: 'g', to: 'kg', multiplier: 0.001, commonValues: [1000, 2000, 3000, 4000, 5000, 10000, 1500, 2500, 3500] }
         ];
         const conversion = units[getRandomInt(0, units.length - 1)];
-        let val = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
-        if (conversion.multiplier < 1) {
-          val = val * Math.round(1 / conversion.multiplier);
-        }
+        const val = conversion.commonValues[getRandomInt(0, conversion.commonValues.length - 1)];
+        
         text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
-        correctAnswer = val * conversion.multiplier;
+        correctAnswer = Math.round(val * conversion.multiplier * 1000) / 1000;
         break;
       }
       case Operation.TimeConversion: {
         const units = [
-          { from: 'hours', to: 'minutes', multiplier: 60 },
-          { from: 'minutes', to: 'hours', multiplier: 1/60 },
-          { from: 'minutes', to: 'seconds', multiplier: 60 },
-          { from: 'seconds', to: 'minutes', multiplier: 1/60 }
+          { from: 'hours', to: 'minutes', multiplier: 60, commonValues: [1, 2, 3, 4, 5, 10, 12, 24, 1.5, 2.5] },
+          { from: 'minutes', to: 'hours', multiplier: 1/60, commonValues: [30, 45, 60, 90, 120, 150, 180, 240, 300, 600, 720] },
+          { from: 'minutes', to: 'seconds', multiplier: 60, commonValues: [1, 2, 3, 4, 5, 10, 15, 20, 30, 60, 1.5, 2.5] },
+          { from: 'seconds', to: 'minutes', multiplier: 1/60, commonValues: [30, 60, 90, 120, 180, 240, 300, 600, 900, 1200] }
         ];
         const conversion = units[getRandomInt(0, units.length - 1)];
-        let val = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
-        if (conversion.multiplier < 1) {
-          val = val * Math.round(1 / conversion.multiplier);
-        }
+        const val = conversion.commonValues[getRandomInt(0, conversion.commonValues.length - 1)];
+        
         text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
-        correctAnswer = Math.round(val * conversion.multiplier); // prevent floating point errors
+        correctAnswer = Math.round(val * conversion.multiplier * 100) / 100;
         break;
       }
     }
