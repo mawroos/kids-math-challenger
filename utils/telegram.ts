@@ -29,7 +29,7 @@ export const sendTelegramNotification = async (message: string) => {
   }
 };
 
-export const formatTestResults = (testType: string, score: number, total: number, timeSeconds?: number, playerName?: string) => {
+export const formatTestResults = (testType: string, score: number, total: number, timeSeconds?: number, playerName?: string, missed?: number) => {
   const hostname = window.location.hostname || 'Unknown Host';
   const platform = navigator.platform || 'Unknown Platform';
   const userAgent = navigator.userAgent;
@@ -55,11 +55,12 @@ export const formatTestResults = (testType: string, score: number, total: number
   if (percentage >= 90) emoji = '🌟';
 
   const playerString = playerName ? `\n👤 <b>Player:</b> ${playerName}` : '';
+  const missedString = (missed !== undefined && missed > 0) ? `\n❓ <b>Missed:</b> ${missed} ${missed === 1 ? 'question' : 'questions'}` : '';
 
   return `
 🎯 <b>Test Completed!</b>${playerString}
 <b>Type:</b> ${testType}
-${emoji} <b>Score:</b> ${score} / ${total} (${percentage}%) ${timeString}
+${emoji} <b>Score:</b> ${score} / ${total} (${percentage}%) ${timeString}${missedString}
 
 📱 <b>Device Info:</b>
 • Hostname: ${hostname}

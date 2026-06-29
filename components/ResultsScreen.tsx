@@ -10,7 +10,7 @@ interface ResultsScreenProps {
 }
 
 const ResultsScreen: React.FC<ResultsScreenProps> = ({ results, onRestart, soundEnabled }) => {
-    const { score, total, time } = results;
+    const { score, total, time, missed = 0 } = results;
     const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
 
     // Play results sound when component mounts (if sound is enabled)
@@ -57,6 +57,7 @@ const ResultsScreen: React.FC<ResultsScreenProps> = ({ results, onRestart, sound
                     <p className="text-sm font-medium text-slate-400 mb-2">SCORE</p>
                     <p className={`text-5xl font-bold ${getPerformanceColor()}`}>{score}<span className="text-3xl text-slate-500">/{total}</span></p>
                     <p className={`text-xl font-semibold mt-2 ${getPerformanceColor()}`}>{percentage}%</p>
+                    {missed > 0 && <p className="text-sm font-semibold text-amber-400 mt-2">{missed} missed {missed === 1 ? 'question' : 'questions'}</p>}
                 </div>
                 <div className="bg-slate-900/50 p-6 rounded-lg">
                     <p className="text-sm font-medium text-slate-400 mb-2">TIME</p>
