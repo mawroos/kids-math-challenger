@@ -104,6 +104,7 @@ export interface ProblemSolvingResults {
   score: number;
   total: number;
   time: number;
+  missed?: number;
 }
 
 export enum AppState {

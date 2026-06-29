@@ -112,8 +112,8 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
 
     if (question.isProblemSolving) {
       // Multiple-choice PS questions: clicking an option IS the submission, so keep immediate feedback.
-      if (value !== '' && !isNaN(parseInt(value, 10))) {
-        const numericValue = parseInt(value, 10);
+      if (value !== '' && !isNaN(parseFloat(value))) {
+        const numericValue = parseFloat(value);
         const isCorrect = numericValue === question.correctAnswer;
         if (soundEnabled) {
           if (isCorrect) soundEffects.playCorrectSound();
@@ -148,7 +148,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
         const value = userAnswers[key];
         if (!value || value === '') { anyWrong = true; return; }
 
-        const numericValue = parseInt(value, 10);
+        const numericValue = parseFloat(value);
         if (isNaN(numericValue)) { anyWrong = true; return; }
 
         let boxCorrect: boolean;
@@ -157,7 +157,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
         } else {
           let isDuplicate = false;
           for (let j = 0; j < idx; j++) {
-            const prevVal = parseInt(userAnswers[`${question.id}_${j}`] || '', 10);
+            const prevVal = parseFloat(userAnswers[`${question.id}_${j}`] || '');
             if (prevVal === numericValue) { isDuplicate = true; break; }
           }
           boxCorrect = question.correctAnswers!.includes(numericValue) && !isDuplicate;
@@ -181,7 +181,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
       const value = userAnswers[qKey];
       if (!value || value === '') return;
 
-      const numericValue = parseInt(value, 10);
+      const numericValue = parseFloat(value);
       if (isNaN(numericValue)) return;
 
       const isCorrect = numericValue === question.correctAnswer;
@@ -216,7 +216,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
             if (valStr === undefined || valStr === '') {
               missed++;
             } else {
-              const val = parseInt(valStr, 10);
+              const val = parseFloat(valStr);
               if (!isNaN(val) && val === expected) {
                 score++;
               }
@@ -231,7 +231,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
             const valStr = userAnswers[key];
             if (valStr !== undefined && valStr !== '') {
               missingCount--;
-              const val = parseInt(valStr, 10);
+              const val = parseFloat(valStr);
               if (!isNaN(val) && q.correctAnswers!.includes(val) && !enteredValues.has(val)) {
                 enteredValues.add(val);
                 score++;
@@ -269,47 +269,6 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
     onCancel();
   }, [onCancel]);
 
-  const isQuestionAnswered = useCallback((q: Question) => {
-    if (q.isProblemSolving) {
-      // Multiple-choice: answered as soon as an option is selected.
-      const key = q.id.toString();
-      return userAnswers[key] !== undefined && userAnswers[key] !== '';
-    }
-    if (q.correctAnswers) {
-      const qKey = q.id.toString();
-      const isSubmitted = !!submittedAnswers[qKey];
-      // All boxes locked by max-failed → done
-      if (q.correctAnswers.every((_, idx) => (failedAttempts[`${q.id}_${idx}`] || 0) >= MAX_FAILED_ATTEMPTS)) return true;
-      if (!isSubmitted) return false;
-      const hasLabels = q.answerLabels && q.answerLabels.length === q.correctAnswers.length;
-      if (hasLabels) {
-        return q.correctAnswers.every((expected, idx) => {
-          const key = `${q.id}_${idx}`;
-          return parseInt(userAnswers[key], 10) === expected;
-        });
-      } else {
-        const enteredValues = new Set<number>();
-        return q.correctAnswers.every((_, idx) => {
-          const key = `${q.id}_${idx}`;
-          const val = parseInt(userAnswers[key], 10);
-          if (!isNaN(val) && q.correctAnswers!.includes(val) && !enteredValues.has(val)) {
-            enteredValues.add(val);
-            return true;
-          }
-          return false;
-        });
-      }
-    }
-    const key = q.id.toString();
-    const isSubmitted = !!submittedAnswers[key];
-    const val = parseInt(userAnswers[key], 10);
-    const isCorrect = !isNaN(val) && val === q.correctAnswer;
-    return (isCorrect && isSubmitted) || (failedAttempts[key] || 0) >= MAX_FAILED_ATTEMPTS;
-  }, [userAnswers, submittedAnswers, failedAttempts]);
-
-  const allAnswered = useMemo(() => {
-    return questions.every(isQuestionAnswered);
-  }, [questions, isQuestionAnswered]);
 
   return (
     <div className="animate-fade-in">
@@ -456,13 +415,13 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                         if (hasLabels) {
                             allCorrect = allBoxesFilled && q.correctAnswers.every((expected, idx) => {
                                 const key = `${q.id}_${idx}`;
-                                return parseInt(userAnswers[key], 10) === expected;
+                                return parseFloat(userAnswers[key]) === expected;
                             });
                         } else {
                             const enteredValues: number[] = [];
                             q.correctAnswers.forEach((_, idx) => {
                                 const key = `${q.id}_${idx}`;
-                                const val = parseInt(userAnswers[key], 10);
+                                const val = parseFloat(userAnswers[key]);
                                 if (!isNaN(val)) enteredValues.push(val);
                             });
                             const uniqueCorrect = new Set(enteredValues.filter(v => q.correctAnswers!.includes(v)));
@@ -490,7 +449,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                 {q.correctAnswers.map((expectedVal, idx) => {
                                     const key = `${q.id}_${idx}`;
                                     const boxValue = userAnswers[key] || '';
-                                    const boxNum = parseInt(boxValue, 10);
+                                    const boxNum = parseFloat(boxValue);
                                     const boxAnswered = boxValue !== '';
 
                                     let boxCorrect: boolean;
@@ -500,7 +459,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                         let isDuplicate = false;
                                         if (boxAnswered && !isNaN(boxNum)) {
                                             for (let j = 0; j < idx; j++) {
-                                                const prevVal = parseInt(userAnswers[`${q.id}_${j}`] || '', 10);
+                                                const prevVal = parseFloat(userAnswers[`${q.id}_${j}`] || '');
                                                 if (prevVal === boxNum) { isDuplicate = true; break; }
                                             }
                                         }
@@ -552,7 +511,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                 // Regular single-answer question
                 const answerKey = q.id.toString();
                 const userAnswerStr = userAnswers[answerKey];
-                const userAnswerNum = parseInt(userAnswerStr, 10);
+                const userAnswerNum = parseFloat(userAnswerStr);
                 const isAnswered = userAnswerStr !== undefined && userAnswerStr !== '';
                 const isCorrect = isAnswered && userAnswerNum === q.correctAnswer;
                 const isSubmitted = !!submittedAnswers[answerKey];
