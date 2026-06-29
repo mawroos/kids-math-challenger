@@ -66,6 +66,9 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         [Operation.ExpandedNotation]: { lb1: 100, ub1: 99999, lb2: 0, ub2: 0 },
         [Operation.RoundingNumbers]: { lb1: 10, ub1: 99999, lb2: 1, ub2: 4 },
         [Operation.FactorsOf12]: { lb1: 1, ub1: 12, lb2: 1, ub2: 12 },
+        [Operation.LengthConversion]: { lb1: 1, ub1: 100, lb2: 0, ub2: 0 },
+        [Operation.WeightConversion]: { lb1: 1, ub1: 100, lb2: 0, ub2: 0 },
+        [Operation.TimeConversion]: { lb1: 1, ub1: 60, lb2: 0, ub2: 0 },
       };
       const defaults = operationDefaults[operation];
       if (defaults) {
@@ -464,6 +467,53 @@ export function generateQuestions(settings: QuizSettings): Question[] {
         
         text = `Round ${number.toLocaleString()} to the nearest ${placeName}`;
         correctAnswer = rounded;
+        break;
+      }
+      case Operation.LengthConversion: {
+        const units = [
+          { from: 'm', to: 'cm', multiplier: 100 },
+          { from: 'cm', to: 'm', multiplier: 0.01 },
+          { from: 'km', to: 'm', multiplier: 1000 },
+          { from: 'm', to: 'km', multiplier: 0.001 }
+        ];
+        const conversion = units[getRandomInt(0, units.length - 1)];
+        let val = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
+        if (conversion.multiplier < 1) {
+          // If we are dividing, ensure we have a round number that converts cleanly
+          val = val * Math.round(1 / conversion.multiplier);
+        }
+        text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
+        correctAnswer = val * conversion.multiplier;
+        break;
+      }
+      case Operation.WeightConversion: {
+        const units = [
+          { from: 'kg', to: 'g', multiplier: 1000 },
+          { from: 'g', to: 'kg', multiplier: 0.001 }
+        ];
+        const conversion = units[getRandomInt(0, units.length - 1)];
+        let val = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
+        if (conversion.multiplier < 1) {
+          val = val * Math.round(1 / conversion.multiplier);
+        }
+        text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
+        correctAnswer = val * conversion.multiplier;
+        break;
+      }
+      case Operation.TimeConversion: {
+        const units = [
+          { from: 'hours', to: 'minutes', multiplier: 60 },
+          { from: 'minutes', to: 'hours', multiplier: 1/60 },
+          { from: 'minutes', to: 'seconds', multiplier: 60 },
+          { from: 'seconds', to: 'minutes', multiplier: 1/60 }
+        ];
+        const conversion = units[getRandomInt(0, units.length - 1)];
+        let val = getRandomInt(Math.max(1, currentLowerBound1), currentUpperBound1);
+        if (conversion.multiplier < 1) {
+          val = val * Math.round(1 / conversion.multiplier);
+        }
+        text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
+        correctAnswer = Math.round(val * conversion.multiplier); // prevent floating point errors
         break;
       }
     }

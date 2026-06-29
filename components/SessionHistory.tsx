@@ -91,6 +91,9 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ onLoadSession, onClose 
       [Operation.FactorsOf12]: 'Factors 12',
       [Operation.ExpandedNotation]: 'Expanded',
       [Operation.RoundingNumbers]: 'Rounding',
+      [Operation.LengthConversion]: 'Length',
+      [Operation.WeightConversion]: 'Weight',
+      [Operation.TimeConversion]: 'Time',
     };
     return labels[op] || op;
   };

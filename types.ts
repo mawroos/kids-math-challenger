@@ -16,6 +16,9 @@ export enum Operation {
   FactorsOf12 = 'factors-of-12',
   ExpandedNotation = 'expanded-notation',
   RoundingNumbers = 'rounding-numbers',
+  LengthConversion = 'length-conversion',
+  WeightConversion = 'weight-conversion',
+  TimeConversion = 'time-conversion',
 }
 
 export interface OperationRanges {
@@ -36,6 +39,9 @@ export interface OperationRanges {
   [Operation.FactorsOf12]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.ExpandedNotation]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
   [Operation.RoundingNumbers]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.LengthConversion]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.WeightConversion]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
+  [Operation.TimeConversion]: { lowerBound1: number; upperBound1: number; lowerBound2: number; upperBound2: number; };
 }
 
 export interface QuizSettings {
