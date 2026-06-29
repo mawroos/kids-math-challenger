@@ -89,6 +89,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     [Operation.FactorsOf12]: { lowerBound1: 10, upperBound1: 50, lowerBound2: 10, upperBound2: 50 },
     [Operation.ExpandedNotation]: { lowerBound1: 1000, upperBound1: 99999, lowerBound2: 1, upperBound2: 2 },
     [Operation.RoundingNumbers]: { lowerBound1: 10, upperBound1: 99999, lowerBound2: 1, upperBound2: 3 },
+    [Operation.LengthConversion]: { lowerBound1: 1, upperBound1: 100, lowerBound2: 0, upperBound2: 0 },
+    [Operation.WeightConversion]: { lowerBound1: 1, upperBound1: 100, lowerBound2: 0, upperBound2: 0 },
+    [Operation.TimeConversion]: { lowerBound1: 1, upperBound1: 60, lowerBound2: 0, upperBound2: 0 },
   });
 
   const handleUnlock = () => {
@@ -140,6 +143,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
       case Operation.FactorsOf12: return 'Find Factors';
       case Operation.ExpandedNotation: return 'Expanded Notation';
       case Operation.RoundingNumbers: return 'Rounding Numbers';
+      case Operation.LengthConversion: return 'Length Units';
+      case Operation.WeightConversion: return 'Weight Units';
+      case Operation.TimeConversion: return 'Time Units';
       default: return '';
     }
   };
@@ -612,6 +618,9 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
             <OperationButton op={Operation.FactorsOf12} label="Factors" icon="🔢" selected={selectedOps.includes(Operation.FactorsOf12)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.ExpandedNotation} label="Expanded" icon="🔣" selected={selectedOps.includes(Operation.ExpandedNotation)} onClick={handleOperationToggle} />
             <OperationButton op={Operation.RoundingNumbers} label="Rounding" icon="🔵" selected={selectedOps.includes(Operation.RoundingNumbers)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.LengthConversion} label="Length" icon="📏" selected={selectedOps.includes(Operation.LengthConversion)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.WeightConversion} label="Weight" icon="⚖️" selected={selectedOps.includes(Operation.WeightConversion)} onClick={handleOperationToggle} />
+            <OperationButton op={Operation.TimeConversion} label="Time" icon="⏱️" selected={selectedOps.includes(Operation.TimeConversion)} onClick={handleOperationToggle} />
           </div>
           {selectedOps.includes(Operation.FractionEquivalents) && (
             <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
@@ -727,6 +736,33 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
                 <span className="font-semibold text-blue-400">Rounding Numbers:</span> Round numbers to the nearest ten, hundred, thousand, etc.
                 <br />
                 <span className="text-slate-400 text-xs">Examples: 673 → 670 (nearest ten), 4,294 → 4,300 (nearest hundred), 15,427 → 15,000 (nearest thousand)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.LengthConversion) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-sky-400">Length Conversion:</span> Convert between meters, centimeters, and kilometers.
+                <br />
+                <span className="text-slate-400 text-xs">Example: Convert 5 m to cm (answer: 500)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.WeightConversion) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-orange-400">Weight Conversion:</span> Convert between kilograms and grams.
+                <br />
+                <span className="text-slate-400 text-xs">Example: Convert 2 kg to g (answer: 2000)</span>
+              </p>
+            </div>
+          )}
+          {selectedOps.includes(Operation.TimeConversion) && (
+            <div className="mt-3 p-3 bg-slate-700/50 rounded-lg">
+              <p className="text-sm text-slate-300 text-center">
+                <span className="font-semibold text-purple-400">Time Conversion:</span> Convert between hours, minutes, and seconds.
+                <br />
+                <span className="text-slate-400 text-xs">Example: Convert 2 hours to minutes (answer: 120)</span>
               </p>
             </div>
           )}
