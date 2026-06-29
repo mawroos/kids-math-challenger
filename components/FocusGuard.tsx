@@ -18,12 +18,8 @@ const FocusGuard: React.FC<FocusGuardProps> = ({ onReset, children }) => {
   const resetRef = useRef(onReset);
   resetRef.current = onReset;
 
-  const handleEnter = async () => {
-    try {
-      await document.documentElement.requestFullscreen();
-    } catch {
-      // Fullscreen may not be supported or allowed
-    }
+  const handleEnter = () => {
+    document.documentElement.requestFullscreen().catch(() => {});
     setEntered(true);
     enteredRef.current = true;
   };

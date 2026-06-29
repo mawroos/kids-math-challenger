@@ -34,6 +34,8 @@ const OperationButton: React.FC<{
   );
 };
 
+const SINGLE_RANGE_OPS = new Set([Operation.LengthConversion, Operation.WeightConversion, Operation.TimeConversion]);
+
 const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingChallenge, onLoadSession }) => {
   const [challengeType, setChallengeType] = useState<ChallengeType>(ChallengeType.MATH);
   const [playerName, setPlayerName] = useState<string>('');
@@ -169,7 +171,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
         // Validate custom ranges for each selected operation
         for (const op of selectedOps) {
           const ranges = operationRanges[op];
-          if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || ranges.lowerBound2 >= ranges.upperBound2) {
+          if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || (!SINGLE_RANGE_OPS.has(op) && ranges.lowerBound2 >= ranges.upperBound2)) {
             setError(`Invalid ranges for ${getOperationLabel(op)}. Lower bounds must be less than upper bounds.`);
             return;
           }
@@ -211,7 +213,7 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
         // Validate custom ranges for each selected operation
         for (const op of selectedOps) {
           const ranges = operationRanges[op];
-          if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || ranges.lowerBound2 >= ranges.upperBound2) {
+          if (!ranges || ranges.lowerBound1 >= ranges.upperBound1 || (!SINGLE_RANGE_OPS.has(op) && ranges.lowerBound2 >= ranges.upperBound2)) {
             setError(`Invalid ranges for ${getOperationLabel(op)}. Lower bounds must be less than upper bounds.`);
             return;
           }
