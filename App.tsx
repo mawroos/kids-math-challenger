@@ -199,7 +199,7 @@ const App: React.FC = () => {
     analytics.trackQuizComplete('math', results.score, results.total, results.time);
     
     // Send Telegram Notification
-    const message = formatTestResults('Math Quiz', results.score, results.total, results.time, quizSettings?.playerName);
+    const message = formatTestResults('Math Quiz', results.score, results.total, results.time, quizSettings?.playerName, results.missed);
     sendTelegramNotification(message);
     
     // Save completed session to history
@@ -286,7 +286,7 @@ const App: React.FC = () => {
     analytics.trackQuizComplete('problem-solving', results.score, results.total, results.time);
     
     // Send Telegram Notification
-    const message = formatTestResults('Problem Solving', results.score, results.total, results.time, problemSolvingSettings?.playerName);
+    const message = formatTestResults('Problem Solving', results.score, results.total, results.time, problemSolvingSettings?.playerName, results.missed);
     sendTelegramNotification(message);
     
     // If there were also math quiz results, go to problem solving results

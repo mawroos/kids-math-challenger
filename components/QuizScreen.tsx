@@ -203,6 +203,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
     }
     let score = 0;
     let total = 0;
+    let missed = 0;
     questions.forEach(q => {
       if (q.correctAnswers) {
         total += q.correctAnswers.length;
@@ -211,28 +212,44 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
           // Positional matching (expanded notation)
           q.correctAnswers.forEach((expected, idx) => {
             const key = `${q.id}_${idx}`;
-            const val = parseInt(userAnswers[key], 10);
-            if (!isNaN(val) && val === expected) {
-              score++;
+            const valStr = userAnswers[key];
+            if (valStr === undefined || valStr === '') {
+              missed++;
+            } else {
+              const val = parseInt(valStr, 10);
+              if (!isNaN(val) && val === expected) {
+                score++;
+              }
             }
           });
         } else {
           // Unordered matching (factors)
           const enteredValues = new Set<number>();
+          let missingCount = q.correctAnswers.length;
           q.correctAnswers.forEach((_, idx) => {
             const key = `${q.id}_${idx}`;
-            const val = parseInt(userAnswers[key], 10);
-            if (!isNaN(val) && q.correctAnswers!.includes(val) && !enteredValues.has(val)) {
-              enteredValues.add(val);
-              score++;
+            const valStr = userAnswers[key];
+            if (valStr !== undefined && valStr !== '') {
+              missingCount--;
+              const val = parseInt(valStr, 10);
+              if (!isNaN(val) && q.correctAnswers!.includes(val) && !enteredValues.has(val)) {
+                enteredValues.add(val);
+                score++;
+              }
             }
           });
+          missed += missingCount;
         }
       } else {
         total++;
-        const userAnswer = parseInt(userAnswers[q.id.toString()], 10);
-        if (userAnswer === q.correctAnswer) {
-          score++;
+        const answerStr = userAnswers[q.id.toString()];
+        if (answerStr === undefined || answerStr === '') {
+          missed++;
+        } else {
+          const userAnswer = parseInt(answerStr, 10);
+          if (userAnswer === q.correctAnswer) {
+            score++;
+          }
         }
       }
     });
@@ -242,7 +259,7 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
       soundEffects.playCelebrationSound();
     }
     
-    onFinishQuiz({ score, total, time });
+    onFinishQuiz({ score, total, time, missed });
   }, [questions, userAnswers, time, onFinishQuiz, soundEnabled]);
 
   const handleCancel = useCallback(() => {
@@ -591,10 +608,9 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
             </button>
             <button
                 onClick={finishQuiz}
-                disabled={!allAnswered}
-                className="bg-gradient-to-r from-sky-500 to-cyan-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-200 disabled:bg-slate-600 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed disabled:scale-100"
+                className="bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-600 hover:to-cyan-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-200"
             >
-                {allAnswered ? 'Finish Quiz' : 'Answer all questions to finish'}
+                Finish Test
             </button>
         </div>
     </div>

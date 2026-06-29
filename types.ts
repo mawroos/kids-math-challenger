@@ -77,6 +77,7 @@ export interface QuizResults {
   score: number;
   total: number;
   time: number;
+  missed?: number;
 }
 
 export type ProblemType = 'word-problem' | 'column-calculation' | 'money-problem' | 'missing-number';
