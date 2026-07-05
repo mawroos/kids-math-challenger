@@ -26,6 +26,7 @@ jobs:
 
       - name: Build
         env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GTM_CONTAINER_ID: ${{ secrets.GTM_CONTAINER_ID }}
         run: npm run build
 
