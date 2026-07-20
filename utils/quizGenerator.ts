@@ -497,33 +497,54 @@ export function generateQuestions(settings: QuizSettings): Question[] {
       }
       case Operation.TimeConversion: {
         const units = [
-          { from: 'hours', to: 'minutes', commonValues: [1, 2, 3, 4, 5, 10, 12, 24, 1.3, 2.3] },
+          { from: 'hours', to: 'minutes', commonValues: [1, 2, 3, 4, 5, 10, 12, 24, 1.5, 2.5] },
           { from: 'minutes', to: 'hours', commonValues: [30, 45, 60, 90, 120, 150, 180, 240, 300, 600, 720] },
-          { from: 'minutes', to: 'seconds', commonValues: [1, 2, 3, 4, 5, 10, 15, 20, 30, 60, 1.3, 2.3] },
+          { from: 'minutes', to: 'seconds', commonValues: [1, 2, 3, 4, 5, 10, 15, 20, 30, 60, 1.5, 2.5] },
           { from: 'seconds', to: 'minutes', commonValues: [30, 60, 90, 120, 180, 240, 300, 600, 900, 1200] }
         ];
         const conversion = units[getRandomInt(0, units.length - 1)];
         const val = conversion.commonValues[getRandomInt(0, conversion.commonValues.length - 1)];
         
-        text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
+        let textVal = val.toString();
         
         if (conversion.from === 'minutes' && conversion.to === 'hours') {
+          text = `Convert ${val} minutes to hours and minutes`;
           const hours = Math.floor(val / 60);
           const minutes = val % 60;
-          correctAnswer = Math.round((hours + (minutes / 100)) * 100) / 100;
+          correctAnswer = 0; // Not used for validation when correctAnswers is set
+          question.correctAnswers = [hours, minutes];
+          question.answerLabels = ['Hrs', 'Mins'];
+          question.answerSeparator = ':';
         } else if (conversion.from === 'seconds' && conversion.to === 'minutes') {
+          text = `Convert ${val} seconds to minutes and seconds`;
           const minutes = Math.floor(val / 60);
           const seconds = val % 60;
-          correctAnswer = Math.round((minutes + (seconds / 100)) * 100) / 100;
+          correctAnswer = 0;
+          question.correctAnswers = [minutes, seconds];
+          question.answerLabels = ['Mins', 'Secs'];
+          question.answerSeparator = ':';
         } else if (conversion.from === 'hours' && conversion.to === 'minutes') {
-          const hours = Math.floor(val);
-          const minutes = Math.round((val % 1) * 100);
-          correctAnswer = hours * 60 + minutes;
+          if (val % 1 !== 0) {
+             const hrs = Math.floor(val);
+             const mins = Math.round((val % 1) * 60);
+             textVal = `${hrs} hr ${mins} mins`;
+          } else {
+             textVal = `${val} ${conversion.from}`;
+          }
+          text = `Convert ${textVal} to ${conversion.to}`;
+          correctAnswer = Math.round(val * 60);
         } else if (conversion.from === 'minutes' && conversion.to === 'seconds') {
-          const minutes = Math.floor(val);
-          const seconds = Math.round((val % 1) * 100);
-          correctAnswer = minutes * 60 + seconds;
+          if (val % 1 !== 0) {
+             const mins = Math.floor(val);
+             const secs = Math.round((val % 1) * 60);
+             textVal = `${mins} min ${secs} secs`;
+          } else {
+             textVal = `${val} ${conversion.from}`;
+          }
+          text = `Convert ${textVal} to ${conversion.to}`;
+          correctAnswer = Math.round(val * 60);
         } else {
+          text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
           correctAnswer = 0;
         }
         break;
