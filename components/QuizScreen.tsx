@@ -472,7 +472,9 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
                                     return (
                                         <div key={idx} className="flex items-center space-x-1">
                                             {hasLabels && idx > 0 && (
-                                                <span className="text-slate-400 text-lg font-bold mr-1" aria-hidden="true">+</span>
+                                                <span className="text-slate-400 text-lg font-bold mr-1" aria-hidden="true">
+                                                    {q.answerSeparator ?? '+'}
+                                                </span>
                                             )}
                                             <div className="flex flex-col items-center">
                                                 <input

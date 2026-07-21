@@ -89,6 +89,9 @@ export function generateQuestions(settings: QuizSettings): Question[] {
     let factorsTarget = 0;
     let expandedDigits: number[] = [];
     let expandedLabels: string[] = [];
+    let timeCorrectAnswers: number[] | undefined = undefined;
+    let timeAnswerLabels: string[] | undefined = undefined;
+    let timeAnswerSeparator: string | undefined = undefined;
 
     switch (operation) {
       case Operation.Addition:
@@ -497,16 +500,55 @@ export function generateQuestions(settings: QuizSettings): Question[] {
       }
       case Operation.TimeConversion: {
         const units = [
-          { from: 'hours', to: 'minutes', multiplier: 60, commonValues: [1, 2, 3, 4, 5, 10, 12, 24, 1.5, 2.5] },
-          { from: 'minutes', to: 'hours', multiplier: 1/60, commonValues: [30, 45, 60, 90, 120, 150, 180, 240, 300, 600, 720] },
-          { from: 'minutes', to: 'seconds', multiplier: 60, commonValues: [1, 2, 3, 4, 5, 10, 15, 20, 30, 60, 1.5, 2.5] },
-          { from: 'seconds', to: 'minutes', multiplier: 1/60, commonValues: [30, 60, 90, 120, 180, 240, 300, 600, 900, 1200] }
+          { from: 'hours', to: 'minutes', commonValues: [1, 2, 3, 4, 5, 10, 12, 24, 1.5, 2.5] },
+          { from: 'minutes', to: 'hours', commonValues: [60, 90, 120, 150, 180, 240, 300, 600, 720] },
+          { from: 'minutes', to: 'seconds', commonValues: [1, 2, 3, 4, 5, 10, 15, 20, 30, 60, 1.5, 2.5] },
+          { from: 'seconds', to: 'minutes', commonValues: [60, 90, 120, 180, 240, 300, 600, 900, 1200] }
         ];
         const conversion = units[getRandomInt(0, units.length - 1)];
         const val = conversion.commonValues[getRandomInt(0, conversion.commonValues.length - 1)];
         
-        text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
-        correctAnswer = Math.round(val * conversion.multiplier * 100) / 100;
+        let textVal = val.toString();
+        
+        const toMixedUnits = (v: number, divider: number) => ({ whole: Math.floor(v / divider), remainder: Math.round(v % divider) });
+        
+        if (conversion.from === 'minutes' && conversion.to === 'hours') {
+          text = `Convert ${val} minutes to hours and minutes`;
+          const { whole: hours, remainder: minutes } = toMixedUnits(val, 60);
+          correctAnswer = 0; // Not used for validation when correctAnswers is set
+          timeCorrectAnswers = [hours, minutes];
+          timeAnswerLabels = ['Hrs', 'Mins'];
+          timeAnswerSeparator = ':';
+        } else if (conversion.from === 'seconds' && conversion.to === 'minutes') {
+          text = `Convert ${val} seconds to minutes and seconds`;
+          const { whole: minutes, remainder: seconds } = toMixedUnits(val, 60);
+          correctAnswer = 0;
+          timeCorrectAnswers = [minutes, seconds];
+          timeAnswerLabels = ['Mins', 'Secs'];
+          timeAnswerSeparator = ':';
+        } else if (conversion.from === 'hours' && conversion.to === 'minutes') {
+          if (val % 1 !== 0) {
+             const { whole: hrs, remainder: mins } = toMixedUnits(val * 60, 60);
+             textVal = `${hrs} hr ${mins} mins`;
+          } else {
+             textVal = `${val} ${conversion.from}`;
+          }
+          text = `Convert ${textVal} to ${conversion.to}`;
+          correctAnswer = Math.round(val * 60);
+        } else if (conversion.from === 'minutes' && conversion.to === 'seconds') {
+          if (val % 1 !== 0) {
+             const { whole: mins, remainder: secs } = toMixedUnits(val * 60, 60);
+             textVal = `${mins} min ${secs} secs`;
+          } else {
+             textVal = `${val} ${conversion.from}`;
+          }
+          text = `Convert ${textVal} to ${conversion.to}`;
+          correctAnswer = Math.round(val * 60);
+        } else {
+          // Fallback, should not be reached with current config.
+          text = `Convert ${val} ${conversion.from} to ${conversion.to}`;
+          correctAnswer = Math.round(val * 60); // At least make it somewhat predictable
+        }
         break;
       }
     }
@@ -518,6 +560,11 @@ export function generateQuestions(settings: QuizSettings): Question[] {
     if (operation === Operation.ExpandedNotation) {
       question.correctAnswers = expandedDigits;
       question.answerLabels = expandedLabels;
+    }
+    if (operation === Operation.TimeConversion && timeCorrectAnswers) {
+      question.correctAnswers = timeCorrectAnswers;
+      question.answerLabels = timeAnswerLabels;
+      question.answerSeparator = timeAnswerSeparator;
     }
     questions.push(question);
   }
