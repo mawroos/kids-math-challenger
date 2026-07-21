@@ -1,4 +1,5 @@
 import { Question, QuizResults, QuizSettings, AppState, WritingChallengeSettings, WritingChallengeResult } from '../types';
+import { idbGet, idbSet, idbDelete, idbAtomicUpdate } from './db';
 
 interface QuizSessionData {
   appState: AppState;
@@ -38,205 +39,292 @@ const SESSION_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 const HISTORY_DURATION = 365 * 24 * 60 * 60 * 1000; // 1 year in milliseconds
 const MAX_HISTORY_SESSIONS = 100;
 
-export const sessionStorageUtils = {
-  saveSession: (data: Omit<QuizSessionData, 'timestamp'>) => {
+// One-time migration of any pre-upgrade data sitting in localStorage into
+// IndexedDB, so users mid-quiz when this ships don't lose their progress.
+let migrationPromise: Promise<void> | null = null;
+
+const migrateLegacyLocalStorage = (): Promise<void> => {
+  if (migrationPromise) return migrationPromise;
+
+  migrationPromise = (async () => {
+    for (const key of [SESSION_KEY, HISTORY_KEY]) {
+      try {
+        const existing = await idbGet(key);
+        if (existing !== undefined) continue;
+
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          await idbSet(key, JSON.parse(raw));
+        }
+      } catch (error) {
+        console.warn(`Failed to migrate legacy data for ${key}:`, error);
+      }
+    }
+  })();
+
+  return migrationPromise;
+};
+
+// IndexedDB is the primary, durable store (survives tablet restarts far more
+// reliably than localStorage — see requestPersistentStorage in utils/db.ts).
+// Every write is mirrored to localStorage too, as a synchronous-friendly
+// second copy in case IndexedDB is ever unavailable.
+const readValue = async <T>(key: string): Promise<T | null> => {
+  await migrateLegacyLocalStorage();
+
+  try {
+    const fromIdb = await idbGet<T>(key);
+    if (fromIdb !== undefined) return fromIdb;
+  } catch (error) {
+    console.warn(`Failed to read ${key} from IndexedDB:`, error);
+  }
+
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw) as T;
+  } catch (error) {
+    console.warn(`Failed to read ${key} from localStorage:`, error);
+  }
+
+  return null;
+};
+
+const deleteValue = async (key: string): Promise<void> => {
+  try {
+    await idbDelete(key);
+  } catch (error) {
+    console.warn(`Failed to delete ${key} from IndexedDB:`, error);
+  }
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.warn(`Failed to delete ${key} from localStorage:`, error);
+  }
+};
+
+// Atomic read-modify-write, used for anything that can be updated from more
+// than one place in quick succession (e.g. answers + timer ticking in the
+// same second). Returning undefined from `mutate` skips the write.
+const updateValue = async <T>(
+  key: string,
+  mutate: (current: T | undefined) => T | undefined
+): Promise<T | undefined> => {
+  await migrateLegacyLocalStorage();
+
+  let next: T | undefined;
+  try {
+    next = await idbAtomicUpdate<T>(key, mutate);
+  } catch (error) {
+    console.warn(`Failed to update ${key} in IndexedDB:`, error);
+    const current = await readValue<T>(key);
+    next = mutate(current ?? undefined);
+  }
+
+  if (next !== undefined) {
     try {
-      const sessionData: QuizSessionData = {
-        ...data,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch (error) {
+      console.warn(`Failed to mirror ${key} to localStorage:`, error);
+    }
+  }
+
+  return next;
+};
+
+export const sessionStorageUtils = {
+  // Callers like the top-level App auto-save effect only track appState/
+  // questions/settings and don't pass userAnswers/time at all — merge (via
+  // an atomic update) rather than overwrite, so that write can't race with
+  // updateUserAnswers/updateTime or a session restore and silently wipe them.
+  saveSession: async (data: Omit<QuizSessionData, 'timestamp'>): Promise<void> => {
+    try {
+      await updateValue<QuizSessionData>(SESSION_KEY, (current) => {
+        const sessionData: QuizSessionData = {
+          ...data,
+          timestamp: Date.now(),
+        };
+        if (!('userAnswers' in data) && current?.userAnswers !== undefined) {
+          sessionData.userAnswers = current.userAnswers;
+        }
+        if (!('time' in data) && current?.time !== undefined) {
+          sessionData.time = current.time;
+        }
+        return sessionData;
+      });
     } catch (error) {
       console.warn('Failed to save session data:', error);
     }
   },
 
-  loadSession: (): QuizSessionData | null => {
+  loadSession: async (): Promise<QuizSessionData | null> => {
     try {
-      const stored = localStorage.getItem(SESSION_KEY);
-      if (!stored) return null;
+      const sessionData = await readValue<QuizSessionData>(SESSION_KEY);
+      if (!sessionData) return null;
 
-      const sessionData: QuizSessionData = JSON.parse(stored);
-      
-      // Check if session has expired (older than 24 hours)
+      // Check if session has expired (older than 30 days)
       if (Date.now() - sessionData.timestamp > SESSION_DURATION) {
-        sessionStorageUtils.clearSession();
+        await sessionStorageUtils.clearSession();
         return null;
       }
 
       return sessionData;
     } catch (error) {
       console.warn('Failed to load session data:', error);
-      sessionStorageUtils.clearSession();
+      await sessionStorageUtils.clearSession();
       return null;
     }
   },
 
-  clearSession: () => {
+  clearSession: async (): Promise<void> => {
     try {
-      localStorage.removeItem(SESSION_KEY);
+      await deleteValue(SESSION_KEY);
     } catch (error) {
       console.warn('Failed to clear session data:', error);
     }
   },
 
-  updateUserAnswers: (userAnswers: Record<string, string>) => {
+  updateUserAnswers: async (userAnswers: Record<string, string>): Promise<void> => {
     try {
-      const stored = localStorage.getItem(SESSION_KEY);
-      if (stored) {
-        const sessionData: QuizSessionData = JSON.parse(stored);
-        sessionData.userAnswers = userAnswers;
-        sessionData.timestamp = Date.now(); // Update timestamp
-        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-      }
+      await updateValue<QuizSessionData>(SESSION_KEY, (current) =>
+        current ? { ...current, userAnswers, timestamp: Date.now() } : undefined
+      );
     } catch (error) {
       console.warn('Failed to update user answers:', error);
     }
   },
 
-  updateTime: (time: number) => {
+  updateTime: async (time: number): Promise<void> => {
     try {
-      const stored = localStorage.getItem(SESSION_KEY);
-      if (stored) {
-        const sessionData: QuizSessionData = JSON.parse(stored);
-        sessionData.time = time;
-        sessionData.timestamp = Date.now(); // Update timestamp
-        localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
-      }
+      await updateValue<QuizSessionData>(SESSION_KEY, (current) =>
+        current ? { ...current, time, timestamp: Date.now() } : undefined
+      );
     } catch (error) {
       console.warn('Failed to update time:', error);
     }
   },
 
   // Session History Management
-  saveCompletedSession: (
+  saveCompletedSession: async (
     questions: Question[],
     quizResults: QuizResults,
     settings: QuizSettings
-  ) => {
+  ): Promise<void> => {
     try {
-      const history = sessionStorageUtils.loadHistory();
-      
-      const completedSession: CompletedSession = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: Date.now(),
-        timeTaken: quizResults.time,
-        questionsAnswered: quizResults.total,
-        totalQuestions: quizResults.total,
-        score: quizResults.score,
-        settings,
-        questions,
-        quizResults,
-        isCompleted: true,
-      };
+      await updateValue<SessionHistory>(HISTORY_KEY, (current) => {
+        const history: SessionHistory = current ?? { sessions: [], timestamp: Date.now() };
 
-      // Add new session at the beginning
-      history.sessions.unshift(completedSession);
+        const completedSession: CompletedSession = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          timestamp: Date.now(),
+          timeTaken: quizResults.time,
+          questionsAnswered: quizResults.total,
+          totalQuestions: quizResults.total,
+          score: quizResults.score,
+          settings,
+          questions,
+          quizResults,
+          isCompleted: true,
+        };
 
-      // Keep only last 100 sessions
-      if (history.sessions.length > MAX_HISTORY_SESSIONS) {
-        history.sessions = history.sessions.slice(0, MAX_HISTORY_SESSIONS);
-      }
+        // Add new session at the beginning, keep only the last 100 sessions
+        const sessions = [completedSession, ...history.sessions].slice(0, MAX_HISTORY_SESSIONS);
 
-      history.timestamp = Date.now();
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        return { sessions, timestamp: Date.now() };
+      });
     } catch (error) {
       console.warn('Failed to save completed session:', error);
     }
   },
 
-  saveIncompleteSession: (
+  saveIncompleteSession: async (
     questions: Question[],
     settings: QuizSettings,
     userAnswers: Record<string, string>,
     time: number,
     appState: AppState
-  ) => {
+  ): Promise<void> => {
     try {
-      const history = sessionStorageUtils.loadHistory();
-      
       // Calculate current progress
       const answeredCount = Object.keys(userAnswers).filter(key => userAnswers[key] !== '').length;
-      
-      const incompleteSession: CompletedSession = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: Date.now(),
-        timeTaken: time,
-        questionsAnswered: answeredCount,
-        totalQuestions: questions.length,
-        score: 0,
-        settings,
-        questions,
-        quizResults: null,
-        isCompleted: false,
-        userAnswers,
-        appState,
-      };
 
-      // Add new session at the beginning
-      history.sessions.unshift(incompleteSession);
+      await updateValue<SessionHistory>(HISTORY_KEY, (current) => {
+        const history: SessionHistory = current ?? { sessions: [], timestamp: Date.now() };
 
-      // Keep only last 100 sessions
-      if (history.sessions.length > MAX_HISTORY_SESSIONS) {
-        history.sessions = history.sessions.slice(0, MAX_HISTORY_SESSIONS);
-      }
+        const incompleteSession: CompletedSession = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          timestamp: Date.now(),
+          timeTaken: time,
+          questionsAnswered: answeredCount,
+          totalQuestions: questions.length,
+          score: 0,
+          settings,
+          questions,
+          quizResults: null,
+          isCompleted: false,
+          userAnswers,
+          appState,
+        };
 
-      history.timestamp = Date.now();
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        // Add new session at the beginning, keep only the last 100 sessions
+        const sessions = [incompleteSession, ...history.sessions].slice(0, MAX_HISTORY_SESSIONS);
+
+        return { sessions, timestamp: Date.now() };
+      });
     } catch (error) {
       console.warn('Failed to save incomplete session:', error);
     }
   },
 
-  loadHistory: (): SessionHistory => {
+  loadHistory: async (): Promise<SessionHistory> => {
     try {
-      const stored = localStorage.getItem(HISTORY_KEY);
-      if (!stored) {
+      const history = await readValue<SessionHistory>(HISTORY_KEY);
+      if (!history) {
         return { sessions: [], timestamp: Date.now() };
       }
 
-      const history: SessionHistory = JSON.parse(stored);
-
       // Check if history has expired (older than 1 year)
       if (Date.now() - history.timestamp > HISTORY_DURATION) {
-        sessionStorageUtils.clearHistory();
+        await sessionStorageUtils.clearHistory();
         return { sessions: [], timestamp: Date.now() };
       }
 
       // Filter out expired sessions (older than 1 year)
-      history.sessions = history.sessions.filter(
+      const sessions = history.sessions.filter(
         (session) => Date.now() - session.timestamp <= HISTORY_DURATION
       );
 
-      return history;
+      return { ...history, sessions };
     } catch (error) {
       console.warn('Failed to load session history:', error);
       return { sessions: [], timestamp: Date.now() };
     }
   },
 
-  deleteSession: (sessionId: string) => {
+  deleteSession: async (sessionId: string): Promise<void> => {
     try {
-      const history = sessionStorageUtils.loadHistory();
-      history.sessions = history.sessions.filter((s) => s.id !== sessionId);
-      history.timestamp = Date.now();
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      await updateValue<SessionHistory>(HISTORY_KEY, (current) => {
+        const history: SessionHistory = current ?? { sessions: [], timestamp: Date.now() };
+        return {
+          sessions: history.sessions.filter((s) => s.id !== sessionId),
+          timestamp: Date.now(),
+        };
+      });
     } catch (error) {
       console.warn('Failed to delete session:', error);
     }
   },
 
-  clearHistory: () => {
+  clearHistory: async (): Promise<void> => {
     try {
-      localStorage.removeItem(HISTORY_KEY);
+      await deleteValue(HISTORY_KEY);
     } catch (error) {
       console.warn('Failed to clear session history:', error);
     }
   },
 
-  loadSessionById: (sessionId: string): CompletedSession | null => {
+  loadSessionById: async (sessionId: string): Promise<CompletedSession | null> => {
     try {
-      const history = sessionStorageUtils.loadHistory();
+      const history = await sessionStorageUtils.loadHistory();
       return history.sessions.find((s) => s.id === sessionId) || null;
     } catch (error) {
       console.warn('Failed to load session by ID:', error);

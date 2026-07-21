@@ -23,22 +23,25 @@ const SessionHistory: React.FC<SessionHistoryProps> = ({ onLoadSession, onClose 
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
 
   useEffect(() => {
-    const history = sessionStorageUtils.loadHistory();
-    setSessions(history.sessions);
+    const loadSessions = async () => {
+      const history = await sessionStorageUtils.loadHistory();
+      setSessions(history.sessions);
+    };
+    loadSessions();
   }, []);
 
-  const handleDelete = (sessionId: string, e: React.MouseEvent) => {
+  const handleDelete = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm('Are you sure you want to delete this session?')) {
-      sessionStorageUtils.deleteSession(sessionId);
-      const history = sessionStorageUtils.loadHistory();
+      await sessionStorageUtils.deleteSession(sessionId);
+      const history = await sessionStorageUtils.loadHistory();
       setSessions(history.sessions);
     }
   };
 
-  const handleClearAll = () => {
+  const handleClearAll = async () => {
     if (confirm('Are you sure you want to delete all session history?')) {
-      sessionStorageUtils.clearHistory();
+      await sessionStorageUtils.clearHistory();
       setSessions([]);
     }
   };

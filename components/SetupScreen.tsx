@@ -108,8 +108,8 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onStartQuiz, onStartWritingCh
     }
   };
 
-  const handleClearSession = () => {
-    sessionStorageUtils.clearSession();
+  const handleClearSession = async () => {
+    await sessionStorageUtils.clearSession();
     window.location.reload(); // Reload to ensure clean state
   };
 
