@@ -12,6 +12,7 @@ import FocusGuard from './components/FocusGuard';
 import { generateQuestions, convertProblemSolvingToQuestions } from './utils/quizGenerator';
 import { generateProblemSolvingQuestions } from './utils/problemSolvingGenerator';
 import { sessionStorageUtils } from './utils/sessionStorage';
+import { requestPersistentStorage } from './utils/db';
 import { urlUtils } from './utils/urlUtils';
 import { analytics } from './utils/analytics';
 import { sendTelegramNotification, formatTestResults } from './utils/telegram';
@@ -31,6 +32,7 @@ const App: React.FC = () => {
   const [showSessionConflict, setShowSessionConflict] = useState<boolean>(false);
   const [urlSettingsFromLink, setUrlSettingsFromLink] = useState<QuizSettings | null>(null);
   const [existingSessionData, setExistingSessionData] = useState<any>(null);
+  const [quizSavedNotice, setQuizSavedNotice] = useState<boolean>(false);
 
   // Initialize Google Tag Manager on mount
   useEffect(() => {
@@ -40,50 +42,65 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Load session data on mount
+  // Ask the browser to keep our storage durable across tablet/browser restarts
   useEffect(() => {
-    const urlParams = urlUtils.getCurrentUrlParams();
-    const sessionData = sessionStorageUtils.loadSession();
-    
-    if (urlParams) {
-      const urlSettings = urlUtils.decodeQuizSettings(urlParams);
-      if (urlSettings) {
-        // Check if there's existing session data
-        if (sessionData && (sessionData.appState !== AppState.SETUP || sessionData.questions.length > 0)) {
-          // Show conflict resolution dialog
-          setUrlSettingsFromLink(urlSettings);
-          setExistingSessionData(sessionData);
-          setShowSessionConflict(true);
-          
-          // Clear URL parameters to keep URL clean
-          urlUtils.updateUrl('');
-        } else {
-          // No existing session or only setup screen, proceed with URL settings
-          startQuizFromUrl(urlSettings);
-        }
-        return;
-      }
-    }
-    
-    // No URL parameters, try to load session data
-    if (sessionData) {
-      setAppState(sessionData.appState);
-      setQuestions(sessionData.questions);
-      setQuizResults(sessionData.quizResults);
-      setQuizSettings(sessionData.quizSettings);
-      setWritingSettings(sessionData.writingSettings || null);
-      setWritingResult(sessionData.writingResult || null);
-      setSessionRestored(true);
-      setIsFromUrl(false);
-      
-      // Hide the notification after 3 seconds
-      setTimeout(() => setSessionRestored(false), 3000);
-    }
+    requestPersistentStorage();
   }, []);
 
-  const startQuizFromUrl = (urlSettings: QuizSettings) => {
+  // Load session data on mount
+  useEffect(() => {
+    const init = async () => {
+      const urlParams = urlUtils.getCurrentUrlParams();
+      const sessionData = await sessionStorageUtils.loadSession();
+
+      if (urlParams) {
+        const urlSettings = urlUtils.decodeQuizSettings(urlParams);
+        if (urlSettings) {
+          // Check if there's existing session data
+          if (sessionData && (sessionData.appState !== AppState.SETUP || sessionData.questions.length > 0)) {
+            // Show conflict resolution dialog
+            setUrlSettingsFromLink(urlSettings);
+            setExistingSessionData(sessionData);
+            setShowSessionConflict(true);
+
+            // Clear URL parameters to keep URL clean
+            urlUtils.updateUrl('');
+          } else {
+            // No existing session or only setup screen, proceed with URL settings
+            startQuizFromUrl(urlSettings);
+          }
+          return;
+        }
+      }
+
+      // No URL parameters, try to load session data
+      if (sessionData) {
+        setAppState(sessionData.appState);
+        setQuestions(sessionData.questions);
+        setQuizResults(sessionData.quizResults);
+        setQuizSettings(sessionData.quizSettings);
+        setWritingSettings(sessionData.writingSettings || null);
+        setWritingResult(sessionData.writingResult || null);
+        setSessionRestored(true);
+        setIsFromUrl(false);
+
+        // Hide the notification after 3 seconds
+        setTimeout(() => setSessionRestored(false), 3000);
+      }
+    };
+
+    init();
+  }, []);
+
+  const startQuizFromUrl = async (urlSettings: QuizSettings) => {
+    // Clear any stale answers/timer left over from a previous (possibly
+    // discarded) session before this fresh quiz's state gets auto-saved —
+    // saveSession preserves userAnswers/time it isn't explicitly given, so
+    // without this a discarded quiz's answers could otherwise leak in.
+    await sessionStorageUtils.clearSession();
+
     setQuizSettings(urlSettings);
-    
+
     let mathQuestions: Question[] = [];
     if (urlSettings.operations.length > 0) {
       mathQuestions = generateQuestions(urlSettings);
@@ -161,9 +178,13 @@ const App: React.FC = () => {
     }
   }, [appState, questions, quizResults, quizSettings, writingSettings, writingResult]);
 
-  const handleStartQuiz = useCallback((settings: QuizSettings) => {
+  const handleStartQuiz = useCallback(async (settings: QuizSettings) => {
+    // Clear any stale answers/timer left over from a previous session before
+    // this fresh quiz's state gets auto-saved (see startQuizFromUrl for why).
+    await sessionStorageUtils.clearSession();
+
     setQuizSettings(settings);
-    
+
     let mathQuestions: Question[] = [];
     if (settings.operations.length > 0) {
       mathQuestions = generateQuestions(settings);
@@ -192,46 +213,52 @@ const App: React.FC = () => {
     analytics.trackQuizStart('math', mathQuestions.length);
   }, []);
 
-  const handleFinishQuiz = useCallback((results: QuizResults) => {
+  const handleFinishQuiz = useCallback(async (results: QuizResults) => {
     setQuizResults(results);
-    
+
     // Track quiz completion
     analytics.trackQuizComplete('math', results.score, results.total, results.time);
-    
+
     // Send Telegram Notification
     const message = formatTestResults('Math Quiz', results.score, results.total, results.time, quizSettings?.playerName, results.missed);
     sendTelegramNotification(message);
-    
+
     // Save completed session to history
     if (quizSettings) {
-      sessionStorageUtils.saveCompletedSession(questions, results, quizSettings);
+      await sessionStorageUtils.saveCompletedSession(questions, results, quizSettings);
     }
-    
+
     setAppState(AppState.RESULTS);
   }, [questions, quizSettings]);
 
-  const handleCancelQuiz = useCallback(() => {
-    // Save incomplete session to history before clearing
+  // Save current progress to history and exit to the setup screen. The live
+  // auto-restore session is cleared so reloading lands on Setup rather than
+  // silently resuming — resuming is now an explicit "View History" action.
+  const handleCancelQuiz = useCallback(async () => {
     if (quizSettings && questions.length > 0) {
-      const sessionData = sessionStorageUtils.loadSession();
+      const sessionData = await sessionStorageUtils.loadSession();
       if (sessionData && sessionData.userAnswers && sessionData.time !== undefined) {
-        sessionStorageUtils.saveIncompleteSession(
+        await sessionStorageUtils.saveIncompleteSession(
           questions,
           quizSettings,
           sessionData.userAnswers,
           sessionData.time,
           AppState.QUIZ
         );
+        setQuizSavedNotice(true);
+        setTimeout(() => setQuizSavedNotice(false), 3000);
       }
     }
-    
+
+    await sessionStorageUtils.clearSession();
+
     setQuestions([]);
     setQuizResults(null);
     setQuizSettings(null);
     setAppState(AppState.SETUP);
   }, [questions, quizSettings]);
 
-  const handleRestart = useCallback(() => {
+  const handleRestart = useCallback(async () => {
     setQuestions([]);
     setQuizResults(null);
     setQuizSettings(null);
@@ -241,7 +268,7 @@ const App: React.FC = () => {
     setProblemSolvingQuestions([]);
     setProblemSolvingResults(null);
     setAppState(AppState.SETUP);
-    sessionStorageUtils.clearSession();
+    await sessionStorageUtils.clearSession();
   }, []);
 
   const handleStartWritingChallenge = useCallback((settings: WritingChallengeSettings) => {
@@ -309,7 +336,7 @@ const App: React.FC = () => {
     }
   }, [quizResults]);
 
-  const handleFocusGuardReset = useCallback(() => {
+  const handleFocusGuardReset = useCallback(async () => {
     // Don't save session — quiz was reset due to focus loss
     setQuestions([]);
     setQuizResults(null);
@@ -318,7 +345,7 @@ const App: React.FC = () => {
     setProblemSolvingQuestions([]);
     setProblemSolvingResults(null);
     setAppState(AppState.SETUP);
-    sessionStorageUtils.clearSession();
+    await sessionStorageUtils.clearSession();
   }, []);
 
   // Exit fullscreen when leaving guarded quiz states
@@ -329,12 +356,12 @@ const App: React.FC = () => {
     }
   }, [appState]);
 
-  const handleLoadSession = useCallback((sessionId: string) => {
-    const session = sessionStorageUtils.loadSessionById(sessionId);
+  const handleLoadSession = useCallback(async (sessionId: string) => {
+    const session = await sessionStorageUtils.loadSessionById(sessionId);
     if (session) {
       setQuizSettings(session.settings);
       setQuestions(session.questions);
-      
+
       if (session.isCompleted) {
         // Load completed session - go to results screen
         setQuizResults(session.quizResults);
@@ -343,10 +370,10 @@ const App: React.FC = () => {
         // Load incomplete session - restore quiz state and continue
         setQuizResults(null);
         setAppState(session.appState || AppState.QUIZ);
-        
+
         // Restore user answers and time if available
         if (session.userAnswers || session.timeTaken) {
-          sessionStorageUtils.saveSession({
+          await sessionStorageUtils.saveSession({
             appState: session.appState || AppState.QUIZ,
             questions: session.questions,
             quizResults: null,
@@ -430,7 +457,14 @@ const App: React.FC = () => {
           {isFromUrl ? 'Quiz started from shared link!' : 'Session restored! Your progress has been saved.'}
         </div>
       )}
-      
+
+      {/* Save & Exit confirmation */}
+      {quizSavedNotice && (
+        <div className="fixed top-4 right-4 bg-sky-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+          💾 Progress saved! Continue anytime from View History.
+        </div>
+      )}
+
       <div className="w-full max-w-4xl mx-auto">
         <header className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-cyan-300">

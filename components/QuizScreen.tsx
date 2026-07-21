@@ -72,13 +72,16 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
 
   // Load saved user answers and time from session storage
   useEffect(() => {
-    const sessionData = sessionStorageUtils.loadSession();
-    if (sessionData && sessionData.userAnswers) {
-      setUserAnswers(sessionData.userAnswers);
-    }
-    if (sessionData && sessionData.time) {
-      setTime(sessionData.time);
-    }
+    const restore = async () => {
+      const sessionData = await sessionStorageUtils.loadSession();
+      if (sessionData && sessionData.userAnswers) {
+        setUserAnswers(sessionData.userAnswers);
+      }
+      if (sessionData && sessionData.time) {
+        setTime(sessionData.time);
+      }
+    };
+    restore();
   }, []);
 
   // Save user answers to session storage whenever they change
@@ -564,8 +567,9 @@ const QuizScreen: React.FC<QuizScreenProps> = ({ questions, onFinishQuiz, onCanc
             <button
                 onClick={handleCancel}
                 className="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-200"
+                title="Save your progress and exit — continue later from View History"
             >
-                Cancel Quiz
+                💾 Save &amp; Exit
             </button>
             <button
                 onClick={finishQuiz}
